@@ -1,22 +1,48 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
+
+use App\Http\Controllers\Teacher\SubjectController;
+
+use App\Http\Controllers\Student\ItemController;
+use App\Http\Controllers\Student\ScanHistoryController;
 
 Route::view('/', 'landing.index')->name('home');
 
-Route::get('/dashboard', function () {
-    return view('dashboard.index');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::view('/items', 'items.index')->middleware(['auth', 'verified'])->name('items.index');
-Route::view('/schedule', 'schedules.index')->middleware(['auth', 'verified'])->name('schedule.index');
-Route::view('/scan-history', 'scan-history.index')->middleware(['auth', 'verified'])->name('scan-history.index');
-
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+
+    Route::middleware('role:student')->group(function () {
+
+        Route::resource('items', ItemController::class);
+
+        Route::get('/scan-history', [ScanHistoryController::class, 'index'])
+            ->name('scan-history.index');
+
+    });
+
+    Route::middleware('role:teacher')->group(function () {
+
+        Route::resource('subjects', SubjectController::class);
+
+    });
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
 });
 
 require __DIR__.'/auth.php';

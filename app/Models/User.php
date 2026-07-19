@@ -10,8 +10,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable([
+    'name',
+    'email',
+    'password',
+    'role',
+    'class_id',
+])]
+#[Hidden([
+    'password',
+    'remember_token',
+])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -27,6 +36,51 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'class_id' => 'integer',
         ];
+    }
+
+    /**
+     * Class (Student only)
+     */
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function classmates()
+    {
+        return $this->hasMany(
+            User::class,
+            'class_id',
+            'class_id'
+        );
+    }
+
+    /**
+     * Teacher Subjects
+     */
+    public function subjects()
+    {
+        return $this->hasMany(
+            Subject::class,
+            'teacher_id'
+        );
+    }
+
+    /**
+     * Student Items
+     */
+    public function items()
+    {
+        return $this->hasMany(Item::class);
+    }
+
+    /**
+     * Student Scan Logs
+     */
+    public function scanLogs()
+    {
+        return $this->hasMany(ScanLog::class);
     }
 }

@@ -1,247 +1,106 @@
 @php
-    $items = [
-        [
-            'id' => 1,
-            'name' => 'Laptop',
-            'subtitle' => 'Ditambahkan 2 Jul 2026',
-            'icon' => 'device-phone-mobile',
-            'category' => 'Elektronik',
-            'rfid' => 'RF-9F21AC',
-            'compartment' => 'Kompartemen Utama',
-            'status' => 'connected',
-            'lastScanDate' => '2 Jul 2026',
-            'lastScanTime' => '07:14',
-            'createdAt' => strtotime('2026-07-02'),
-        ],
-        [
-            'id' => 2,
-            'name' => 'Buku Fisika',
-            'subtitle' => 'Ditambahkan 2 Jul 2026',
-            'icon' => 'book-open',
-            'category' => 'Buku Pelajaran',
-            'rfid' => 'RF-7B33D1',
-            'compartment' => 'Kantong Depan',
-            'status' => 'connected',
-            'lastScanDate' => '2 Jul 2026',
-            'lastScanTime' => '07:12',
-            'createdAt' => strtotime('2026-07-02'),
-        ],
-        [
-            'id' => 3,
-            'name' => 'Kalkulator',
-            'subtitle' => 'Ditambahkan 30 Jun 2026',
-            'icon' => 'calculator',
-            'category' => 'Alat Tulis',
-            'rfid' => 'RF-4E88A0',
-            'compartment' => 'Kantong Samping',
-            'status' => 'not_scanned',
-            'lastScanDate' => '30 Jun 2026',
-            'lastScanTime' => '08:40',
-            'createdAt' => strtotime('2026-06-30'),
-        ],
-        [
-            'id' => 4,
-            'name' => 'Botol Minum',
-            'subtitle' => 'Ditambahkan 28 Jun 2026',
-            'icon' => 'beaker',
-            'category' => 'Perlengkapan',
-            'rfid' => 'RF-2C915F',
-            'compartment' => 'Kantong Samping',
-            'status' => 'connected',
-            'lastScanDate' => '28 Jun 2026',
-            'lastScanTime' => '06:55',
-            'createdAt' => strtotime('2026-06-28'),
-        ],
-        [
-            'id' => 5,
-            'name' => 'Buku Matematika',
-            'subtitle' => 'Ditambahkan 25 Jun 2026',
-            'icon' => 'book-open',
-            'category' => 'Buku Pelajaran',
-            'rfid' => 'RF-A17C62',
-            'compartment' => 'Kompartemen Utama',
-            'status' => 'not_scanned',
-            'lastScanDate' => '25 Jun 2026',
-            'lastScanTime' => '07:03',
-            'createdAt' => strtotime('2026-06-25'),
-        ],
-        [
-            'id' => 6,
-            'name' => 'Sepatu Olahraga',
-            'subtitle' => 'Ditambahkan 20 Jun 2026',
-            'icon' => 'tag',
-            'category' => 'Perlengkapan Olahraga',
-            'rfid' => null,
-            'compartment' => 'Kompartemen Bawah',
-            'status' => 'no_rfid',
-            'lastScanDate' => '—',
-            'lastScanTime' => '',
-            'createdAt' => strtotime('2026-06-20'),
-        ],
+    // Peta kategori (enum asli dari migration) ke icon & label tampilan
+    $categoryIcons = [
+        'Book' => 'book-open',
+        'Stationery' => 'document-text',
+        'Electronics' => 'device-phone-mobile',
+        'Sports' => 'tag',
+        'Personal' => 'user',
+        'Others' => 'cube',
     ];
 
-    $categoryStyles = [
-        'Elektronik' => 'bg-blue-50 text-blue-700',
-        'Buku Pelajaran' => 'bg-purple-50 text-purple-700',
-        'Alat Tulis' => 'bg-amber-50 text-amber-700',
-        'Perlengkapan' => 'bg-emerald-50 text-emerald-700',
-        'Perlengkapan Olahraga' => 'bg-slate-100 text-slate-700',
+    $categoryLabels = [
+        'Book' => 'Buku',
+        'Stationery' => 'Alat Tulis',
+        'Electronics' => 'Elektronik',
+        'Sports' => 'Olahraga',
+        'Personal' => 'Pribadi',
+        'Others' => 'Lainnya',
     ];
 
-    $statusStyles = [
-        'connected' => ['label' => 'Terhubung', 'class' => 'bg-success/10 text-success'],
-        'not_scanned' => ['label' => 'Belum Dipindai', 'class' => 'bg-warning/10 text-warning'],
-        'no_rfid' => ['label' => 'Tanpa RFID', 'class' => 'bg-destructive/10 text-destructive'],
-    ];
-
-    $itemsForAlpine = collect($items)->map(function ($item) {
-        return [
-            'id' => $item['id'],
-            'name' => $item['name'],
-            'category' => $item['category'],
-            'status' => $item['status'],
-            'createdAt' => $item['createdAt'],
-        ];
-    })->values();
+    // Statistik dihitung dari collection $items yang sudah di-load controller (bukan query tambahan)
+    $totalItems = $items->count();
+    $activeItems = $items->where('status', 'active')->count();
+    $archivedItems = $items->where('status', 'archived')->count();
+    $rfidRegistered = $items->whereNotNull('rfid_uid')->count();
+    // Modal mana yang harus dibuka ulang otomatis kalau validasi gagal
+    $reopenModal = null;
+    if ($errors->any()) {
+        $reopenModal = old('_form') === 'edit' ? 'edit-item-modal' : 'add-item-modal';
+    }
 @endphp
 
-@push('scripts')
-<script>
-    function itemsPage() {
-        return {
-            items: [],
-            deletedIds: [],
-            search: '',
-            category: 'all',
-            status: 'all',
-            sortBy: 'name-asc',
-
-            drawerOpen: false,
-            drawerMode: 'add',
-            form: {
-                name: '',
-                category: 'Elektronik',
-                rfid: '',
-                compartment: '',
-                description: '',
-            },
-
-            deleteModalOpen: false,
-            deleteTarget: null,
-
-            matches(id) {
-                if (this.deletedIds.includes(id)) return false;
-                const item = this.items.find(i => i.id === id);
-                if (!item) return true;
-
-                const searchMatch = item.name.toLowerCase().includes(this.search.toLowerCase());
-                const categoryMatch = this.category === 'all' || item.category === this.category;
-                const statusMatch = this.status === 'all' || item.status === this.status;
-
-                return searchMatch && categoryMatch && statusMatch;
-            },
-
-            sortedIds() {
-                let sorted = [...this.items];
-                if (this.sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
-                if (this.sortBy === 'name-desc') sorted.sort((a, b) => b.name.localeCompare(a.name));
-                if (this.sortBy === 'newest') sorted.sort((a, b) => b.createdAt - a.createdAt);
-                if (this.sortBy === 'oldest') sorted.sort((a, b) => a.createdAt - b.createdAt);
-                return sorted.map(i => i.id);
-            },
-
-            visibleCount() {
-                return this.items.filter(i => this.matches(i.id)).length;
-            },
-
-            reorder() {
-                this.$nextTick(() => {
-                    const tbody = this.$refs.tbody;
-                    if (!tbody) return;
-                    const rows = Array.from(tbody.querySelectorAll('tr[data-row-id]'));
-                    this.sortedIds().forEach((id) => {
-                        const row = rows.find(r => Number(r.dataset.rowId) === id);
-                        if (row) tbody.appendChild(row);
-                    });
-                });
-            },
-
-            openAddDrawer() {
-                this.drawerMode = 'add';
-                this.form = { name: '', category: 'Elektronik', rfid: '', compartment: '', description: '' };
-                this.drawerOpen = true;
-            },
-
-            openEditDrawer(id) {
-                const item = this.items.find(i => i.id === id);
-                this.drawerMode = 'edit';
-                this.form = {
-                    name: item ? item.name : '',
-                    category: item ? item.category : 'Elektronik',
-                    rfid: '',
-                    compartment: '',
-                    description: '',
-                };
-                this.drawerOpen = true;
-            },
-
-            closeDrawer() {
-                this.drawerOpen = false;
-            },
-
-            openDeleteModal(id) {
-                this.deleteTarget = id;
-                this.deleteModalOpen = true;
-            },
-
-            closeDeleteModal() {
-                this.deleteModalOpen = false;
-                this.deleteTarget = null;
-            },
-
-            confirmDelete() {
-                if (this.deleteTarget !== null) {
-                    this.deletedIds.push(this.deleteTarget);
-                }
-                this.closeDeleteModal();
-            },
-        };
-    }
-</script>
-@endpush
-
 <x-layouts.dashboard title="Barang — InCase">
-    <div
-        x-data="itemsPage()"
-        x-init="items = @js($itemsForAlpine); reorder(); $watch('sortBy', () => reorder())"
-        class="flex h-screen bg-background"
-    >
+    <div class="flex h-screen bg-background">
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64">
             <div class="mx-auto max-w-6xl px-6 py-8 sm:px-8">
-                {{-- Header --}}
+
+                {{-- ============ FLASH MESSAGES ============ --}}
+                @if (session('success'))
+                    <div class="mb-6 flex items-center gap-2 rounded-2xl bg-success/10 px-4 py-3 text-sm font-medium text-success">
+                        <x-icon.check-circle class="h-4 w-4 shrink-0" />
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if (session('error'))
+                    <div class="mb-6 flex items-center gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+                        <x-icon.x-circle class="h-4 w-4 shrink-0" />
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                @if (session('warning'))
+                    <div class="mb-6 flex items-center gap-2 rounded-2xl bg-warning/10 px-4 py-3 text-sm font-medium text-warning">
+                        <x-icon.exclamation-triangle class="h-4 w-4 shrink-0" />
+                        {{ session('warning') }}
+                    </div>
+                @endif
+
+                {{-- ============ HEADER ============ --}}
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             Barang
                         </h1>
                         <p class="mt-1.5 text-sm text-muted-foreground">
-                            Kelola seluruh barang sekolah yang terhubung dengan tag RFID.
+                            Kelola semua barang sekolah yang terdaftar dengan RFID.
                         </p>
                     </div>
 
-                    <button
-                        type="button"
-                        @click="openAddDrawer()"
-                        class="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                    >
-                        <x-icon.plus class="h-4 w-4" />
-                        Tambah Barang
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            title="Segera hadir"
+                            disabled
+                            class="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-muted-foreground opacity-60"
+                        >
+                            <x-icon.viewfinder-circle class="h-4 w-4" />
+                            Pindai RFID
+                        </button>
+
+                        <button
+                            type="button"
+                            onclick="openModal('add-item-modal')"
+                            class="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                        >
+                            <x-icon.plus class="h-4 w-4" />
+                            Tambah Barang
+                        </button>
+                    </div>
                 </div>
 
-                {{-- Toolbar --}}
+                {{-- ============ STATISTIC CARDS ============ --}}
+                <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <x-stat-card icon="cube" label="Total Barang" :value="$totalItems" tone="primary" />
+                    <x-stat-card icon="check-circle" label="Barang Aktif" :value="$activeItems" tone="success" />
+                    <x-stat-card icon="archive-box" label="Barang Diarsipkan" :value="$archivedItems" tone="warning" />
+                    <x-stat-card icon="tag" label="RFID Terdaftar" :value="$rfidRegistered" tone="accent" />
+                </div>
+
+                {{-- ============ SEARCH & FILTER ============ --}}
                 <div class="mt-6 flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 sm:flex-row sm:items-center">
                     <div class="relative flex-1">
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">
@@ -249,160 +108,619 @@
                         </span>
                         <input
                             type="text"
-                            x-model="search"
-                            placeholder="Cari nama barang..."
-                            class="block w-full rounded-xl border border-border bg-background py-3 pl-11 pr-3.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                            id="item-search"
+                            onkeyup="filterItemsTable()"
+                            placeholder="Cari nama barang atau UID RFID..."
+                            class="block w-full rounded-xl border border-border bg-background py-2.5 pl-11 pr-3.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                         >
                     </div>
 
                     <div class="relative">
                         <select
-                            x-model="category"
-                            class="appearance-none rounded-xl border border-border bg-background py-3 pl-3.5 pr-9 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                            id="item-category-filter"
+                            onchange="filterItemsTable()"
+                            class="appearance-none rounded-xl border border-border bg-background py-2.5 pl-3.5 pr-9 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                         >
-                            <option value="all">Semua Kategori</option>
-                            <option value="Elektronik">Elektronik</option>
-                            <option value="Buku Pelajaran">Buku Pelajaran</option>
-                            <option value="Alat Tulis">Alat Tulis</option>
-                            <option value="Perlengkapan">Perlengkapan</option>
-                            <option value="Perlengkapan Olahraga">Perlengkapan Olahraga</option>
+                            <option value="">Semua Kategori</option>
+                            @foreach ($categoryLabels as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
                         </select>
                         <x-icon.chevron-down class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     </div>
 
                     <div class="relative">
                         <select
-                            x-model="status"
-                            class="appearance-none rounded-xl border border-border bg-background py-3 pl-3.5 pr-9 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                            id="item-status-filter"
+                            onchange="filterItemsTable()"
+                            class="appearance-none rounded-xl border border-border bg-background py-2.5 pl-3.5 pr-9 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                         >
-                            <option value="all">Semua Status</option>
-                            <option value="connected">Terhubung</option>
-                            <option value="not_scanned">Belum Dipindai</option>
-                            <option value="no_rfid">Tanpa RFID</option>
+                            <option value="">Semua Status</option>
+                            <option value="active">Aktif</option>
+                            <option value="archived">Diarsipkan</option>
                         </select>
                         <x-icon.funnel class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     </div>
+                </div>
 
-                    <div class="relative">
-                        <select
-                            x-model="sortBy"
-                            class="appearance-none rounded-xl border border-border bg-background py-3 pl-3.5 pr-9 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                {{-- ============ TABLE / EMPTY STATE ============ --}}
+                @if ($items->isEmpty())
+                    <div class="mt-6 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-border bg-card px-8 py-20 text-center">
+                        <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <x-icon.archive-box class="h-8 w-8" />
+                        </span>
+                        <h3 class="mt-5 text-lg font-bold text-foreground">Belum ada barang</h3>
+                        <p class="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                            Mulai daftarkan barang sekolahmu supaya bisa dipantau lewat RFID.
+                        </p>
+                        <button
+                            type="button"
+                            onclick="openModal('add-item-modal')"
+                            class="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                         >
-                            <option value="name-asc">Nama A-Z</option>
-                            <option value="name-desc">Nama Z-A</option>
-                            <option value="newest">Terbaru</option>
-                            <option value="oldest">Terlama</option>
-                        </select>
-                        <x-icon.arrows-up-down class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <x-icon.plus class="h-4 w-4" />
+                            Tambah Barang Pertama
+                        </button>
                     </div>
-                </div>
-
-                {{-- Table --}}
-                <div class="mt-6 overflow-hidden rounded-[24px] border border-border bg-card shadow-sm" x-show="visibleCount() > 0">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="border-b border-border bg-muted/40">
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Barang</th>
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kategori</th>
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">UID RFID</th>
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kompartemen</th>
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pindai Terakhir</th>
-                                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground"></th>
-                                </tr>
-                            </thead>
-                            <tbody x-ref="tbody" class="divide-y divide-border">
-                                @foreach ($items as $item)
-                                    <tr
-                                        data-row-id="{{ $item['id'] }}"
-                                        x-show="matches({{ $item['id'] }})"
-                                        class="cursor-pointer transition-colors hover:bg-muted/40"
-                                    >
-                                        <td class="px-6 py-5">
-                                            <div class="flex items-center gap-3">
-                                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                                    <x-dynamic-component :component="'icon.' . $item['icon']" class="h-5 w-5" />
-                                                </span>
-                                                <div class="min-w-0">
-                                                    <p class="font-semibold text-foreground">{{ $item['name'] }}</p>
-                                                    <p class="text-xs text-muted-foreground">{{ $item['subtitle'] }}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-5">
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ $categoryStyles[$item['category']] }}">
-                                                {{ $item['category'] }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-5">
-                                            @if ($item['rfid'])
-                                                <span class="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-mono text-xs text-foreground">
-                                                    {{ $item['rfid'] }}
-                                                </span>
-                                            @else
-                                                <span class="text-xs text-muted-foreground">—</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-5 text-sm text-muted-foreground">
-                                            {{ $item['compartment'] }}
-                                        </td>
-                                        <td class="px-6 py-5">
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusStyles[$item['status']]['class'] }}">
-                                                {{ $statusStyles[$item['status']]['label'] }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-5">
-                                            @if ($item['lastScanTime'])
-                                                <p class="text-sm text-foreground">{{ $item['lastScanDate'] }}</p>
-                                                <p class="text-xs text-muted-foreground">{{ $item['lastScanTime'] }}</p>
-                                            @else
-                                                <p class="text-sm text-muted-foreground">{{ $item['lastScanDate'] }}</p>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-5 text-right">
-                                            <x-row-actions-menu :item-id="$item['id']" />
-                                        </td>
+                @else
+                    <div class="mt-6 hidden overflow-hidden rounded-[24px] border border-border bg-card shadow-sm sm:block">
+                        <div class="max-h-[600px] overflow-auto">
+                            <table class="w-full text-left">
+                                <thead class="sticky top-0 z-10 bg-muted/95 backdrop-blur">
+                                    <tr class="border-b border-border">
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Barang</th>
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kategori</th>
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">UID RFID</th>
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Terakhir Diubah</th>
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground"></th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody id="items-table-body" class="divide-y divide-border">
+                                    @foreach ($items as $item)
+                                        <tr
+                                            class="item-row cursor-default transition-colors hover:bg-muted/40"
+                                            data-name="{{ strtolower($item->name) }}"
+                                            data-rfid="{{ strtolower($item->rfid_uid) }}"
+                                            data-category="{{ $item->category }}"
+                                            data-status="{{ $item->status }}"
+                                        >
+                                            <td class="px-6 py-5">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                        <x-dynamic-component :component="'icon.' . ($categoryIcons[$item->category] ?? 'cube')" class="h-5 w-5" />
+                                                    </span>
+                                                    <p class="font-semibold text-foreground">{{ $item->name }}</p>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-5">
+                                                <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+                                                    {{ $categoryLabels[$item->category] ?? $item->category }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-5">
+                                                <span class="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-mono text-xs text-foreground">
+                                                    {{ $item->rfid_uid }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-5">
+                                                @if ($item->status === 'active')
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                                                        <span class="relative flex h-1.5 w-1.5">
+                                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75"></span>
+                                                            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-success"></span>
+                                                        </span>
+                                                        Aktif
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-muted-foreground/50"></span>
+                                                        Diarsipkan
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-5 text-sm text-muted-foreground">
+                                                {{ $item->updated_at->translatedFormat('d M Y, H:i') }}
+                                            </td>
+                                            <td class="px-6 py-5 text-right">
+                                                <div class="relative inline-block text-left">
+                                                    <button
+                                                        type="button"
+                                                        onclick="toggleActionMenu(event, 'action-menu-{{ $item->id }}')"
+                                                        class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                                        aria-label="Buka menu aksi"
+                                                    >
+                                                        <x-icon.ellipsis-vertical class="h-4 w-4" />
+                                                    </button>
+
+                                                    <div
+                                                        id="action-menu-{{ $item->id }}"
+                                                        class="action-menu absolute right-0 z-20 mt-2 hidden w-40 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            data-id="{{ $item->id }}"
+                                                            data-name="{{ $item->name }}"
+                                                            data-category="{{ $item->category }}"
+                                                            data-rfid="{{ $item->rfid_uid }}"
+                                                            data-description="{{ $item->description }}"
+                                                            data-status="{{ $item->status }}"
+                                                            onclick="openEditModal(this)"
+                                                            class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                                                        >
+                                                            <x-icon.pencil class="h-4 w-4 text-muted-foreground" />
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            data-id="{{ $item->id }}"
+                                                            data-name="{{ $item->name }}"
+                                                            onclick="openDeleteModal(this)"
+                                                            class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
+                                                        >
+                                                            <x-icon.trash class="h-4 w-4" />
+                                                            Hapus
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
-                {{-- Empty state --}}
-                <div class="mt-6" x-show="visibleCount() === 0" x-cloak>
-                    <x-empty-state
-                        icon="archive-box"
-                        title="Belum ada barang ditemukan"
-                        description="Coba ubah kata kunci pencarian atau filter, atau tambahkan barang baru untuk mulai memantau lewat RFID."
-                        button-label="Tambah Barang"
-                        button-click="openAddDrawer()"
-                    />
-                </div>
+                    {{-- ============ MOBILE CARD LIST (di bawah breakpoint sm) ============ --}}
+                    <div id="items-mobile-list" class="mt-6 flex flex-col gap-3 sm:hidden">
+                        @foreach ($items as $item)
+                            <div
+                                class="item-row rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors"
+                                data-name="{{ strtolower($item->name) }}"
+                                data-rfid="{{ strtolower($item->rfid_uid) }}"
+                                data-category="{{ $item->category }}"
+                                data-status="{{ $item->status }}"
+                            >
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex min-w-0 items-center gap-3">
+                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                            <x-dynamic-component :component="'icon.' . ($categoryIcons[$item->category] ?? 'cube')" class="h-5 w-5" />
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="truncate font-semibold text-foreground">{{ $item->name }}</p>
+                                            <p class="text-xs text-muted-foreground">{{ $categoryLabels[$item->category] ?? $item->category }}</p>
+                                        </div>
+                                    </div>
 
-                {{-- Pagination --}}
-                <div class="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row" x-show="visibleCount() > 0">
-                    <p class="text-sm text-muted-foreground">
-                        Menampilkan <span class="font-medium text-foreground" x-text="visibleCount()"></span> dari {{ count($items) }} barang
+                                    <div class="relative shrink-0">
+                                        <button
+                                            type="button"
+                                            onclick="toggleActionMenu(event, 'action-menu-mobile-{{ $item->id }}')"
+                                            class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                            aria-label="Buka menu aksi"
+                                        >
+                                            <x-icon.ellipsis-vertical class="h-4 w-4" />
+                                        </button>
+
+                                        <div
+                                            id="action-menu-mobile-{{ $item->id }}"
+                                            class="action-menu absolute right-0 z-20 mt-2 hidden w-40 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+                                        >
+                                            <button
+                                                type="button"
+                                                data-id="{{ $item->id }}"
+                                                data-name="{{ $item->name }}"
+                                                data-category="{{ $item->category }}"
+                                                data-rfid="{{ $item->rfid_uid }}"
+                                                data-description="{{ $item->description }}"
+                                                data-status="{{ $item->status }}"
+                                                onclick="openEditModal(this)"
+                                                class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                                            >
+                                                <x-icon.pencil class="h-4 w-4 text-muted-foreground" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                data-id="{{ $item->id }}"
+                                                data-name="{{ $item->name }}"
+                                                onclick="openDeleteModal(this)"
+                                                class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
+                                            >
+                                                <x-icon.trash class="h-4 w-4" />
+                                                Hapus
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <span class="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-mono text-xs text-foreground">
+                                        {{ $item->rfid_uid }}
+                                    </span>
+
+                                    @if ($item->status === 'active')
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                                            <span class="relative flex h-1.5 w-1.5">
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75"></span>
+                                                <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-success"></span>
+                                            </span>
+                                            Aktif
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-muted-foreground/50"></span>
+                                            Diarsipkan
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <p class="mt-2.5 text-xs text-muted-foreground">
+                                    Diubah {{ $item->updated_at->translatedFormat('d M Y, H:i') }}
+                                </p>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Pesan kalau hasil filter/pencarian kosong --}}
+                    <p id="no-results-message" class="mt-6 hidden text-center text-sm text-muted-foreground">
+                        Gak ada barang yang cocok sama pencarian atau filter kamu.
                     </p>
-
-                    <div class="flex items-center gap-1.5">
-                        <button type="button" class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted" aria-label="Halaman sebelumnya">
-                            <x-icon.chevron-left class="h-4 w-4" />
-                        </button>
-                        <button type="button" class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-                            1
-                        </button>
-                        <button type="button" class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted" aria-label="Halaman berikutnya">
-                            <x-icon.chevron-right class="h-4 w-4" />
-                        </button>
-                    </div>
-                </div>
+                @endif
             </div>
         </main>
-
-        <x-item-drawer />
-        <x-delete-modal />
     </div>
+
+    {{-- ============ ADD ITEM MODAL ============ --}}
+    <div id="add-item-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+        <div onclick="closeModal('add-item-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+        <div class="modal-panel relative w-full max-w-lg scale-95 rounded-[24px] bg-card p-6 opacity-0 shadow-2xl transition-all duration-200 ease-out sm:p-8">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-foreground">Tambah Barang</h3>
+                <button type="button" onclick="closeModal('add-item-modal')" class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                    <x-icon.x-mark class="h-5 w-5" />
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('items.store') }}" class="mt-6 flex flex-col gap-5">
+                @csrf
+                <input type="hidden" name="_form" value="add">
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Barang</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value="{{ old('_form') === 'add' ? old('name') : '' }}"
+                        placeholder="Contoh: Buku Fisika"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                    @error('name')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori</label>
+                    <select
+                        name="category"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                        @foreach ($categoryLabels as $value => $label)
+                            <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('category')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">UID RFID</label>
+                    <input
+                        type="text"
+                        name="rfid_uid"
+                        value="{{ old('_form') === 'add' ? old('rfid_uid') : '' }}"
+                        placeholder="Contoh: RF-9F21AC"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                    @error('rfid_uid')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Deskripsi</label>
+                    <textarea
+                        name="description"
+                        rows="3"
+                        placeholder="Catatan tambahan (opsional)"
+                        class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >{{ old('_form') === 'add' ? old('description') : '' }}</textarea>
+                    @error('description')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Status</label>
+                    <select
+                        name="status"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                        <option value="active" @selected(old('status') !== 'archived')>Aktif</option>
+                        <option value="archived" @selected(old('status') === 'archived')>Diarsipkan</option>
+                    </select>
+                    @error('status')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="mt-2 flex items-center gap-3">
+                    <button
+                        type="button"
+                        onclick="closeModal('add-item-modal')"
+                        class="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        type="submit"
+                        class="flex-1 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                        Simpan Barang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ============ EDIT ITEM MODAL ============ --}}
+    <div id="edit-item-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+        <div onclick="closeModal('edit-item-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+        <div class="modal-panel relative w-full max-w-lg scale-95 rounded-[24px] bg-card p-6 opacity-0 shadow-2xl transition-all duration-200 ease-out sm:p-8">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-foreground">Edit Barang</h3>
+                <button type="button" onclick="closeModal('edit-item-modal')" class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                    <x-icon.x-mark class="h-5 w-5" />
+                </button>
+            </div>
+
+            <form id="edit-item-form" method="POST" action="" class="mt-6 flex flex-col gap-5">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="_form" value="edit">
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Barang</label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="edit-name"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                    @error('name')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori</label>
+                    <select
+                        name="category"
+                        id="edit-category"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                        @foreach ($categoryLabels as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('category')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">UID RFID</label>
+                    <input
+                        type="text"
+                        name="rfid_uid"
+                        id="edit-rfid_uid"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 font-mono text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                    @error('rfid_uid')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Deskripsi</label>
+                    <textarea
+                        name="description"
+                        id="edit-description"
+                        rows="3"
+                        class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    ></textarea>
+                    @error('description')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Status</label>
+                    <select
+                        name="status"
+                        id="edit-status"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                        <option value="active">Aktif</option>
+                        <option value="archived">Diarsipkan</option>
+                    </select>
+                    @error('status')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="mt-2 flex items-center gap-3">
+                    <button
+                        type="button"
+                        onclick="closeModal('edit-item-modal')"
+                        class="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        type="submit"
+                        class="flex-1 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ============ DELETE CONFIRMATION MODAL ============ --}}
+    <div id="delete-item-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+        <div onclick="closeModal('delete-item-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+        <div class="modal-panel relative w-full max-w-sm scale-95 rounded-[24px] bg-card p-6 text-center opacity-0 shadow-2xl transition-all duration-200 ease-out">
+            <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                <x-icon.trash class="h-7 w-7" />
+            </span>
+
+            <h3 class="mt-4 text-lg font-bold text-foreground">Hapus barang ini?</h3>
+            <p id="delete-item-name" class="mt-2 text-sm leading-relaxed text-muted-foreground"></p>
+
+            <form id="delete-item-form" method="POST" action="" class="mt-6 flex items-center gap-3">
+                @csrf
+                @method('DELETE')
+
+                <button
+                    type="button"
+                    onclick="closeModal('delete-item-modal')"
+                    class="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                    Batal
+                </button>
+                <button
+                    type="submit"
+                    class="flex-1 rounded-full bg-destructive py-2.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                >
+                    Ya, Hapus
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {{-- ============ VANILLA JS (No Alpine, No Vue, No React) ============ --}}
+    <script>
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            const panel = modal.querySelector('.modal-panel');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // requestAnimationFrame biar browser sempet render state awal (opacity-0 scale-95)
+            // sebelum ditransisiin ke state akhir — smooth fade + scale in
+            requestAnimationFrame(function () {
+                if (panel) {
+                    panel.classList.remove('opacity-0', 'scale-95');
+                    panel.classList.add('opacity-100', 'scale-100');
+                }
+            });
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            const panel = modal.querySelector('.modal-panel');
+
+            if (panel) {
+                panel.classList.remove('opacity-100', 'scale-100');
+                panel.classList.add('opacity-0', 'scale-95');
+            }
+
+            // Tunggu transisi kelar (200ms) baru bener-bener disembunyiin
+            setTimeout(function () {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 150);
+        }
+
+        function openEditModal(button) {
+            document.getElementById('edit-name').value = button.dataset.name;
+            document.getElementById('edit-category').value = button.dataset.category;
+            document.getElementById('edit-rfid_uid').value = button.dataset.rfid;
+            document.getElementById('edit-description').value = button.dataset.description;
+            document.getElementById('edit-status').value = button.dataset.status;
+            document.getElementById('edit-item-form').action = '/items/' + button.dataset.id;
+            closeAllActionMenus();
+            openModal('edit-item-modal');
+        }
+
+        function openDeleteModal(button) {
+            document.getElementById('delete-item-name').textContent =
+                'Barang "' + button.dataset.name + '" akan dihapus permanen dan gak bisa dibatalin.';
+            document.getElementById('delete-item-form').action = '/items/' + button.dataset.id;
+            closeAllActionMenus();
+            openModal('delete-item-modal');
+        }
+
+        function toggleActionMenu(event, id) {
+            event.stopPropagation();
+            const menu = document.getElementById(id);
+            const isOpen = !menu.classList.contains('hidden');
+            closeAllActionMenus();
+            if (!isOpen) {
+                menu.classList.remove('hidden');
+            }
+        }
+
+        function closeAllActionMenus() {
+            document.querySelectorAll('.action-menu').forEach(function (menu) {
+                menu.classList.add('hidden');
+            });
+        }
+
+        document.addEventListener('click', function () {
+            closeAllActionMenus();
+        });
+
+        function filterItemsTable() {
+            const search = document.getElementById('item-search').value.toLowerCase();
+            const category = document.getElementById('item-category-filter').value;
+            const status = document.getElementById('item-status-filter').value;
+            const rows = document.querySelectorAll('.item-row');
+            let visibleCount = 0;
+
+            rows.forEach(function (row) {
+                const matchesSearch = row.dataset.name.includes(search) || row.dataset.rfid.includes(search);
+                const matchesCategory = category === '' || row.dataset.category === category;
+                const matchesStatus = status === '' || row.dataset.status === status;
+
+                if (matchesSearch && matchesCategory && matchesStatus) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            const noResults = document.getElementById('no-results-message');
+            if (noResults) {
+                noResults.classList.toggle('hidden', visibleCount !== 0);
+            }
+        }
+
+        // Buka kembali modal yang relevan otomatis kalau ada validation error dari server
+        var reopenModal = @json($reopenModal);
+        if (reopenModal) {
+            document.addEventListener('DOMContentLoaded', function () {
+                openModal(reopenModal);
+            });
+        }
+    </script>
 </x-layouts.dashboard>
