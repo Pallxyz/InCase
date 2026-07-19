@@ -1,28 +1,48 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
+
+use App\Http\Controllers\Teacher\SubjectController;
+
+use App\Http\Controllers\Student\ItemController;
+use App\Http\Controllers\Student\ScanHistoryController;
 
 Route::view('/', 'landing.index')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    Route::get('/items', [ItemController::class, 'index'])->name('items.index');
-    Route::post('/items', [ItemController::class, 'store'])->name('items.store');
-    Route::put('/items/{item}', [ItemController::class, 'update'])->name('items.update');
-    Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
-
-    Route::view('/schedule', 'schedules.index')->name('schedule.index');
-    Route::view('/scan-history', 'scan-history.index')->name('scan-history.index');
-});
-
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+
+    Route::middleware('role:student')->group(function () {
+
+        Route::resource('items', ItemController::class);
+
+        Route::get('/scan-history', [ScanHistoryController::class, 'index'])
+            ->name('scan-history.index');
+
+    });
+
+    Route::middleware('role:teacher')->group(function () {
+
+        Route::resource('subjects', SubjectController::class);
+
+    });
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
 });
 
 require __DIR__.'/auth.php';

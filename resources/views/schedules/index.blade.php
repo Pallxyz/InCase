@@ -1,235 +1,609 @@
 @php
-    $dayNames = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'];
-    $todayName = $dayNames[now()->dayOfWeekIso] ?? 'Senin';
-
-    $weeklySchedule = [
-        'Senin' => [
-            ['subject' => 'Matematika', 'teacher' => 'Bu Sari', 'room' => 'Ruang 3A', 'start' => '07:00', 'end' => '08:30', 'items' => [['icon' => 'book-open', 'label' => 'Buku Matematika'], ['icon' => 'calculator', 'label' => 'Kalkulator']]],
-            ['subject' => 'Bahasa Indonesia', 'teacher' => 'Pak Budi', 'room' => 'Ruang 2B', 'start' => '08:30', 'end' => '10:00', 'items' => [['icon' => 'book-open', 'label' => 'Buku Bahasa Indonesia'], ['icon' => 'document-text', 'label' => 'Buku Tulis']]],
-            ['subject' => 'IPA', 'teacher' => 'Bu Rina', 'room' => 'Lab IPA', 'start' => '10:15', 'end' => '11:45', 'items' => [['icon' => 'book-open', 'label' => 'Buku IPA'], ['icon' => 'calculator', 'label' => 'Kalkulator']]],
-            ['subject' => 'Olahraga', 'teacher' => 'Pak Joko', 'room' => 'Lapangan', 'start' => '13:00', 'end' => '14:30', 'items' => [['icon' => 'tag', 'label' => 'Sepatu Olahraga'], ['icon' => 'beaker', 'label' => 'Botol Minum']]],
-        ],
-        'Selasa' => [
-            ['subject' => 'Fisika', 'teacher' => 'Bu Dewi', 'room' => 'Ruang 3A', 'start' => '07:00', 'end' => '08:30', 'items' => [['icon' => 'book-open', 'label' => 'Buku Fisika'], ['icon' => 'calculator', 'label' => 'Kalkulator']]],
-            ['subject' => 'Bahasa Inggris', 'teacher' => 'Miss Anna', 'room' => 'Ruang 1C', 'start' => '08:30', 'end' => '10:00', 'items' => [['icon' => 'book-open', 'label' => 'Buku Bahasa Inggris']]],
-            ['subject' => 'Seni Budaya', 'teacher' => 'Pak Anto', 'room' => 'Ruang Seni', 'start' => '10:15', 'end' => '11:45', 'items' => [['icon' => 'document-text', 'label' => 'Buku Gambar'], ['icon' => 'pencil', 'label' => 'Pensil Warna']]],
-        ],
-        'Rabu' => [
-            ['subject' => 'Matematika', 'teacher' => 'Bu Sari', 'room' => 'Ruang 3A', 'start' => '07:00', 'end' => '08:30', 'items' => [['icon' => 'book-open', 'label' => 'Buku Matematika'], ['icon' => 'calculator', 'label' => 'Kalkulator']]],
-            ['subject' => 'Kimia', 'teacher' => 'Pak Hadi', 'room' => 'Lab Kimia', 'start' => '08:30', 'end' => '10:00', 'items' => [['icon' => 'book-open', 'label' => 'Buku Kimia']]],
-            ['subject' => 'PPKN', 'teacher' => 'Bu Yuli', 'room' => 'Ruang 2A', 'start' => '10:15', 'end' => '11:45', 'items' => [['icon' => 'book-open', 'label' => 'Buku PPKN']]],
-        ],
-        'Kamis' => [
-            ['subject' => 'Matematika', 'teacher' => 'Bu Sari', 'room' => 'Ruang 3A', 'start' => '07:00', 'end' => '08:30', 'items' => [['icon' => 'book-open', 'label' => 'Buku Matematika'], ['icon' => 'calculator', 'label' => 'Kalkulator']]],
-            ['subject' => 'Fisika', 'teacher' => 'Bu Dewi', 'room' => 'Ruang 3A', 'start' => '08:30', 'end' => '10:00', 'items' => [['icon' => 'book-open', 'label' => 'Buku Fisika'], ['icon' => 'calculator', 'label' => 'Kalkulator']]],
-            ['subject' => 'Bahasa Indonesia', 'teacher' => 'Pak Budi', 'room' => 'Ruang 2B', 'start' => '10:15', 'end' => '11:45', 'items' => [['icon' => 'book-open', 'label' => 'Buku Bahasa Indonesia'], ['icon' => 'document-text', 'label' => 'Buku Tulis']]],
-            ['subject' => 'Olahraga', 'teacher' => 'Pak Joko', 'room' => 'Lapangan', 'start' => '13:00', 'end' => '14:30', 'items' => [['icon' => 'tag', 'label' => 'Sepatu Olahraga'], ['icon' => 'beaker', 'label' => 'Botol Minum']]],
-        ],
-        'Jumat' => [
-            ['subject' => 'Pendidikan Agama', 'teacher' => 'Pak Yusuf', 'room' => 'Ruang 1A', 'start' => '07:00', 'end' => '08:30', 'items' => [['icon' => 'book-open', 'label' => 'Buku Agama']]],
-            ['subject' => 'IPS', 'teacher' => 'Bu Nita', 'room' => 'Ruang 2C', 'start' => '08:30', 'end' => '10:00', 'items' => [['icon' => 'book-open', 'label' => 'Buku IPS']]],
-            ['subject' => 'Prakarya', 'teacher' => 'Pak Deni', 'room' => 'Ruang Prakarya', 'start' => '10:15', 'end' => '11:45', 'items' => [['icon' => 'cube', 'label' => 'Alat Prakarya']]],
-        ],
-        'Sabtu' => [
-            ['subject' => 'Ekstrakurikuler Pramuka', 'teacher' => 'Pembina Pramuka', 'room' => 'Lapangan', 'start' => '08:00', 'end' => '10:00', 'items' => [['icon' => 'tag', 'label' => 'Seragam Pramuka'], ['icon' => 'tag', 'label' => 'Tali Pramuka']]],
-        ],
+    $dayLabels = [
+        'Monday' => 'Senin',
+        'Tuesday' => 'Selasa',
+        'Wednesday' => 'Rabu',
+        'Thursday' => 'Kamis',
+        'Friday' => 'Jumat',
+        'Saturday' => 'Sabtu',
     ];
 
-    $todayClasses = collect($weeklySchedule[$todayName] ?? [])
-        ->sortBy('start')
-        ->values()
-        ->all();
+    $englishDayNames = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
+    $todayDay = $englishDayNames[now()->dayOfWeekIso] ?? 'Monday';
 
-    $firstClassItemCount = count($todayClasses[0]['items'] ?? []);
+    $todaySubjects = $subjects->where('day', $todayDay)->values();
 
-    // Daftar barang dari halaman Barang (Items) — dipakai buat multi-select di drawer Tambah Jadwal
-    $availableItems = ['Laptop', 'Buku Fisika', 'Kalkulator', 'Botol Minum', 'Buku Matematika', 'Sepatu Olahraga'];
+    $isTeacher = auth()->check() && (auth()->user()->role ?? null) === 'teacher';
+
+    // SubjectController@index belum ngirim $items ke view ini, padahal modal
+    // Tambah/Edit butuh daftar barang buat multi-select. Query langsung di sini
+    // (data asli dari tabel items, BUKAN array dummy) sebagai jalan pintas.
+    // Idealnya nanti dipindah ke SubjectController::index() dan di-pass via compact().
+    $availableItems = $isTeacher
+        ? \App\Models\Item::where('user_id', auth()->id())->orderBy('name')->get(['id', 'name'])
+        : collect();
 @endphp
 
-@push('scripts')
-<script>
-    function getClassStatus(start, end) {
-        const now = new Date();
-        const todayStr = now.toISOString().slice(0, 10);
-        const startTime = new Date(`${todayStr}T${start}:00`);
-        const endTime = new Date(`${todayStr}T${end}:00`);
-
-        if (now < startTime) return 'upcoming';
-        if (now >= startTime && now <= endTime) return 'now';
-        return 'completed';
-    }
-
-    function schedulePage(todayName) {
-        return {
-            modeView: 'today',
-            selectedDay: todayName,
-        };
-    }
-</script>
-@endpush
-
 <x-layouts.dashboard title="Jadwal — InCase">
-    <div x-data="schedulePage('{{ $todayName }}')" class="flex h-screen bg-background">
+    <div class="flex h-screen bg-background">
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64">
-            <div class="mx-auto max-w-7xl px-6 py-8 sm:px-8">
-                {{-- Header + Segmented control --}}
+            <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+
+                {{-- ============ FLASH MESSAGE ============ --}}
+                @if (session('success'))
+                    <div class="mb-6 flex items-center gap-2 rounded-2xl bg-success/10 px-4 py-3 text-sm font-medium text-success">
+                        <x-icon.check-circle class="h-4 w-4 shrink-0" />
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                {{-- ============ HEADER ============ --}}
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             Jadwal
                         </h1>
                         <p class="mt-1.5 text-sm text-muted-foreground">
-                            Lihat jadwal pelajaran hari ini atau seminggu penuh.
+                            Kelola dan lihat jadwal pelajaran.
                         </p>
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <div class="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1">
-                            <button
-                                type="button"
-                                @click="modeView = 'today'"
-                                :class="modeView === 'today' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
-                                class="rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-                            >
-                                Hari Ini
-                            </button>
-                            <button
-                                type="button"
-                                @click="modeView = 'weekly'"
-                                :class="modeView === 'weekly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
-                                class="rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-                            >
-                                Mingguan
-                            </button>
-                        </div>
-
+                    @if ($isTeacher)
                         <button
                             type="button"
-                            @click="$dispatch('open-add-schedule-drawer')"
+                            onclick="openAddModal()"
                             class="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                         >
                             <x-icon.plus class="h-4 w-4" />
                             Tambah Jadwal
                         </button>
-                    </div>
+                    @endif
                 </div>
 
-                {{-- ============ TODAY MODE ============ --}}
-                <div x-show="modeView === 'today'">
-                    {{-- Welcome section --}}
-                    <div class="mt-6 flex items-center justify-between rounded-2xl border border-border bg-card px-6 py-4">
-                        <p class="text-sm font-medium text-foreground">
-                            Selamat Pagi, Nopal.
-                            <span class="text-muted-foreground">
-                                {{ count($todayClasses) }} kelas hari ini ({{ $todayName }})
-                                @if ($firstClassItemCount > 0)
-                                    , {{ $firstClassItemCount }} barang wajib sebelum kelas pertama
-                                @endif
-                                .
+                {{-- ============ TODAY'S CLASSES ============ --}}
+                <div class="mt-6">
+                    <h2 class="text-lg font-bold text-foreground">
+                        Kelas Hari Ini · {{ $dayLabels[$todayDay] ?? $todayDay }}
+                    </h2>
+
+                    @if ($todaySubjects->isEmpty())
+                        <div class="mt-4 flex flex-col items-center justify-center rounded-[24px] border border-dashed border-border bg-card px-8 py-14 text-center">
+                            <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                <x-icon.calendar-days class="h-7 w-7" />
                             </span>
-                        </p>
-                    </div>
+                            <p class="mt-4 text-sm font-medium text-foreground">Gak ada kelas hari ini</p>
+                            <p class="mt-1 text-sm text-muted-foreground">Nikmati harimu, atau cek jadwal hari lain di bawah.</p>
+                        </div>
+                    @else
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            @foreach ($todaySubjects as $subject)
+                                <div class="rounded-[24px] border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <h3 class="text-lg font-bold text-foreground">{{ $subject->name }}</h3>
+                                            <p class="mt-1 text-sm font-medium text-muted-foreground">
+                                                {{ \Carbon\Carbon::parse($subject->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($subject->end_time)->format('H:i') }}
+                                            </p>
+                                        </div>
 
-                    <div class="mt-6 flex flex-col gap-4">
-                        @forelse ($todayClasses as $class)
-                            <x-class-card
-                                :subject="$class['subject']"
-                                :teacher="$class['teacher']"
-                                :room="$class['room']"
-                                :start="$class['start']"
-                                :end="$class['end']"
-                                :items="$class['items']"
-                            />
-                        @empty
-                            <x-empty-state
-                                icon="calendar-days"
-                                title="Belum ada jadwal"
-                                description="Belum ada kelas yang terjadwal hari ini. Tambahkan jadwal baru untuk mulai memantau."
-                                button-label="Tambah Jadwal"
-                                button-click="$dispatch('open-add-schedule-drawer')"
-                            />
-                        @endforelse
-                    </div>
+                                        @if ($subject->has_exam)
+                                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive">
+                                                <x-icon.exclamation-triangle class="h-3 w-3" />
+                                                Ujian
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <x-icon.user class="h-4 w-4" />
+                                            {{ $subject->teacher->name ?? '—' }}
+                                        </span>
+                                        @if ($subject->room)
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <x-icon.map-pin class="h-4 w-4" />
+                                                Ruang {{ $subject->room }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    @if (! empty($subject->homework))
+                                        <div class="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2.5 text-xs text-warning">
+                                            <x-icon.document-text class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                            <span><span class="font-semibold">PR:</span> {{ $subject->homework }}</span>
+                                        </div>
+                                    @endif
+
+                                    @if ($subject->items->isNotEmpty())
+                                        <div class="mt-3 flex flex-wrap gap-1.5">
+                                            @foreach ($subject->items as $item)
+                                                <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground">
+                                                    {{ $item->name }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    @if ($isTeacher)
+                                        <div class="mt-4 flex items-center gap-2 border-t border-border pt-4">
+                                            <button
+                                                type="button"
+                                                data-id="{{ $subject->id }}"
+                                                onclick="openEditModal(this)"
+                                                class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                                            >
+                                                <x-icon.pencil class="h-3.5 w-3.5" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                data-id="{{ $subject->id }}"
+                                                data-name="{{ $subject->name }}"
+                                                onclick="openDeleteModal(this)"
+                                                class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                                            >
+                                                <x-icon.trash class="h-3.5 w-3.5" />
+                                                Hapus
+                                            </button>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
 
-                {{-- ============ WEEKLY MODE ============ --}}
-                <div x-show="modeView === 'weekly'" x-cloak>
-                    {{-- Day tabs --}}
-                    <div class="mt-6 flex flex-wrap gap-2">
-                        @foreach (array_keys($weeklySchedule) as $day)
+                {{-- ============ WEEKLY SCHEDULE ============ --}}
+                <div class="mt-8">
+                    <h2 class="text-lg font-bold text-foreground">Jadwal Mingguan</h2>
+
+                    {{-- Sticky day tabs --}}
+                    <div class="sticky top-0 z-10 mt-4 flex gap-2 overflow-x-auto bg-background py-2">
+                        @foreach ($dayLabels as $dayValue => $dayLabel)
                             <button
                                 type="button"
-                                @click="selectedDay = '{{ $day }}'"
-                                :class="selectedDay === '{{ $day }}' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground border border-border'"
-                                class="rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+                                onclick="switchScheduleDay('{{ $dayValue }}', this)"
+                                data-day="{{ $dayValue }}"
+                                class="day-tab shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors {{ $dayValue === $todayDay ? 'bg-primary text-primary-foreground' : 'border border-border bg-card text-muted-foreground hover:text-foreground' }}"
                             >
-                                {{ $day }}
+                                {{ $dayLabel }}
                             </button>
                         @endforeach
                     </div>
 
-                    {{-- Per-day class list --}}
-                    @foreach ($weeklySchedule as $day => $classes)
-                        <div x-show="selectedDay === '{{ $day }}'" x-cloak class="mt-6 flex flex-col gap-4">
-                            @forelse ($classes as $class)
-                                <div
-                                    @click="$dispatch('open-class-drawer', {
-                                        subject: '{{ $class['subject'] }}',
-                                        teacher: '{{ $class['teacher'] }}',
-                                        room: '{{ $class['room'] }}',
-                                        start: '{{ $class['start'] }}',
-                                        end: '{{ $class['end'] }}',
-                                        items: {{ collect($class['items'])->pluck('label')->toJson() }},
-                                    })"
-                                    class="cursor-pointer rounded-[24px] border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                                >
-                                    <div class="flex items-start justify-between gap-4">
-                                        <div>
-                                            <h3 class="text-lg font-bold text-foreground">{{ $class['subject'] }}</h3>
-                                            <p class="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                                                <x-icon.user class="h-3.5 w-3.5" />
-                                                {{ $class['teacher'] }}
-                                            </p>
-                                        </div>
-                                    </div>
+                    {{-- Subject cards per hari --}}
+                    @foreach ($dayLabels as $dayValue => $dayLabel)
+                        <div
+                            id="schedule-day-{{ $dayValue }}"
+                            class="schedule-day-panel mt-4 flex flex-col gap-4 {{ $dayValue === $todayDay ? '' : 'hidden' }}"
+                        >
+                            @php
+                                $dayItems = $subjects->where('day', $dayValue)->values();
+                            @endphp
 
-                                    <div class="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <x-icon.map-pin class="h-4 w-4" />
-                                            {{ $class['room'] }}
-                                        </span>
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <x-icon.clock class="h-4 w-4" />
-                                            {{ $class['start'] }} – {{ $class['end'] }}
-                                        </span>
-                                    </div>
-
-                                    @if (count($class['items']))
-                                        <div class="mt-4 flex flex-wrap gap-2">
-                                            @foreach ($class['items'] as $item)
-                                                <x-required-item-badge :icon="$item['icon']" :label="$item['label']" />
-                                            @endforeach
-                                        </div>
+                            @if ($dayItems->isEmpty())
+                                <div class="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-border bg-card px-8 py-14 text-center">
+                                    <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                        <x-icon.calendar-days class="h-7 w-7" />
+                                    </span>
+                                    <p class="mt-4 text-sm font-medium text-foreground">Belum ada jadwal</p>
+                                    @if ($isTeacher)
+                                        <p class="mt-1 text-sm text-muted-foreground">Tambahkan jadwal buat hari {{ $dayLabel }}.</p>
+                                        <button
+                                            type="button"
+                                            onclick="openAddModal()"
+                                            class="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                                        >
+                                            <x-icon.plus class="h-4 w-4" />
+                                            Tambah Jadwal
+                                        </button>
+                                    @else
+                                        <p class="mt-1 text-sm text-muted-foreground">Belum ada kelas yang dijadwalkan di hari {{ $dayLabel }}.</p>
                                     @endif
                                 </div>
-                            @empty
-                                <x-empty-state
-                                    icon="calendar-days"
-                                    title="Belum ada jadwal"
-                                    description="Belum ada kelas yang terjadwal di hari ini. Tambahkan jadwal baru untuk hari ini."
-                                    button-label="Tambah Jadwal"
-                                    button-click="$dispatch('open-add-schedule-drawer')"
-                                />
-                            @endforelse
+                            @else
+                                @foreach ($dayItems as $subject)
+                                    <div class="rounded-[24px] border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                                        <div class="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <h3 class="text-base font-bold text-foreground">{{ $subject->name }}</h3>
+                                                <p class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <x-icon.clock class="h-3.5 w-3.5" />
+                                                    {{ \Carbon\Carbon::parse($subject->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($subject->end_time)->format('H:i') }}
+                                                </p>
+                                            </div>
+
+                                            @if ($subject->has_exam)
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive">
+                                                    <x-icon.exclamation-triangle class="h-3 w-3" />
+                                                    Ujian
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <x-icon.user class="h-3.5 w-3.5" />
+                                                {{ $subject->teacher->name ?? '—' }}
+                                            </span>
+                                            @if ($subject->room)
+                                                <span class="inline-flex items-center gap-1.5">
+                                                    <x-icon.map-pin class="h-3.5 w-3.5" />
+                                                    Ruang {{ $subject->room }}
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        @if (! empty($subject->homework))
+                                            <div class="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2.5 text-xs text-warning">
+                                                <x-icon.document-text class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                                <span><span class="font-semibold">PR:</span> {{ $subject->homework }}</span>
+                                            </div>
+                                        @endif
+
+                                        @if ($subject->items->isNotEmpty())
+                                            <div class="mt-3 flex flex-wrap gap-1.5">
+                                                @foreach ($subject->items as $item)
+                                                    <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground">
+                                                        {{ $item->name }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        @if ($isTeacher)
+                                            <div class="mt-4 flex items-center gap-2 border-t border-border pt-4">
+                                                <button
+                                                    type="button"
+                                                    data-id="{{ $subject->id }}"
+                                                    onclick="openEditModal(this)"
+                                                    class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                                                >
+                                                    <x-icon.pencil class="h-3.5 w-3.5" />
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    data-id="{{ $subject->id }}"
+                                                    data-name="{{ $subject->name }}"
+                                                    onclick="openDeleteModal(this)"
+                                                    class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                                                >
+                                                    <x-icon.trash class="h-3.5 w-3.5" />
+                                                    Hapus
+                                                </button>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            @endif
                         </div>
                     @endforeach
                 </div>
             </div>
         </main>
-
-        <x-class-drawer />
-        <x-add-schedule-drawer :available-items="$availableItems" />
     </div>
+
+    @if ($isTeacher)
+        {{-- ============ ADD SCHEDULE MODAL ============ --}}
+        <div id="add-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+            <div onclick="closeModal('add-subject-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+            <div class="modal-panel relative w-full max-w-lg scale-95 rounded-[24px] bg-card p-6 opacity-0 shadow-2xl transition-all duration-200 ease-out sm:p-8">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-foreground">Tambah Jadwal</h3>
+                    <button type="button" onclick="closeModal('add-subject-modal')" class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                        <x-icon.x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <form method="POST" action="{{ route('subjects.store') }}" class="mt-6 flex max-h-[70vh] flex-col gap-5 overflow-y-auto scrollbar-none pr-1">
+                    @csrf
+                    <input type="hidden" name="is_active" value="1">
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Pelajaran</label>
+                        <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: Matematika" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        @error('name')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Ruangan</label>
+                        <input type="text" name="room" value="{{ old('room') }}" placeholder="Contoh: A203" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        @error('room')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Hari</label>
+                        <select name="day" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            @foreach ($dayLabels as $dayValue => $dayLabel)
+                                <option value="{{ $dayValue }}" @selected(old('day') === $dayValue)>{{ $dayLabel }}</option>
+                            @endforeach
+                        </select>
+                        @error('day')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-foreground">Jam Mulai</label>
+                            <input type="time" name="start_time" value="{{ old('start_time') }}" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            @error('start_time')
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-foreground">Jam Selesai</label>
+                            <input type="time" name="end_time" value="{{ old('end_time') }}" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            @error('end_time')
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">PR (opsional)</label>
+                        <textarea name="homework" rows="2" placeholder="Contoh: Kerjakan halaman 42" class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">{{ old('homework') }}</textarea>
+                        @error('homework')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <label class="flex items-center gap-2.5">
+                        <input type="checkbox" name="has_exam" value="1" class="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30">
+                        <span class="text-sm text-foreground">Ada ujian di kelas ini</span>
+                    </label>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Barang Wajib</label>
+                        <div class="flex flex-col divide-y divide-border rounded-xl border border-border">
+                            @forelse ($availableItems as $item)
+                                <label class="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-muted">
+                                    <input type="checkbox" name="items[]" value="{{ $item->id }}" class="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30">
+                                    <span class="text-sm text-foreground">{{ $item->name }}</span>
+                                </label>
+                            @empty
+                                <p class="px-3.5 py-4 text-center text-sm text-muted-foreground">
+                                    Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
+                                </p>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex items-center gap-3">
+                        <button type="button" onclick="closeModal('add-subject-modal')" class="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
+                            Batal
+                        </button>
+                        <button type="submit" class="flex-1 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- ============ EDIT SCHEDULE MODAL ============ --}}
+        <div id="edit-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+            <div onclick="closeModal('edit-subject-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+            <div class="modal-panel relative w-full max-w-lg scale-95 rounded-[24px] bg-card p-6 opacity-0 shadow-2xl transition-all duration-200 ease-out sm:p-8">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-foreground">Edit Jadwal</h3>
+                    <button type="button" onclick="closeModal('edit-subject-modal')" class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                        <x-icon.x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <form id="edit-subject-form" method="POST" action="" class="mt-6 flex max-h-[70vh] flex-col gap-5 overflow-y-auto scrollbar-none pr-1">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="is_active" value="1">
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Pelajaran</label>
+                        <input type="text" name="name" id="edit-name" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        @error('name')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Ruangan</label>
+                        <input type="text" name="room" id="edit-room" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        @error('room')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Hari</label>
+                        <select name="day" id="edit-day" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            @foreach ($dayLabels as $dayValue => $dayLabel)
+                                <option value="{{ $dayValue }}">{{ $dayLabel }}</option>
+                            @endforeach
+                        </select>
+                        @error('day')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-foreground">Jam Mulai</label>
+                            <input type="time" name="start_time" id="edit-start_time" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            @error('start_time')
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-foreground">Jam Selesai</label>
+                            <input type="time" name="end_time" id="edit-end_time" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            @error('end_time')
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">PR (opsional)</label>
+                        <textarea name="homework" id="edit-homework" rows="2" class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"></textarea>
+                        @error('homework')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <label class="flex items-center gap-2.5">
+                        <input type="checkbox" name="has_exam" id="edit-has_exam" value="1" class="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30">
+                        <span class="text-sm text-foreground">Ada ujian di kelas ini</span>
+                    </label>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Barang Wajib</label>
+                        <div class="flex flex-col divide-y divide-border rounded-xl border border-border">
+                            @forelse ($availableItems as $item)
+                                <label class="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-muted">
+                                    <input type="checkbox" name="items[]" value="{{ $item->id }}" class="edit-item-checkbox h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30">
+                                    <span class="text-sm text-foreground">{{ $item->name }}</span>
+                                </label>
+                            @empty
+                                <p class="px-3.5 py-4 text-center text-sm text-muted-foreground">
+                                    Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
+                                </p>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex items-center gap-3">
+                        <button type="button" onclick="closeModal('edit-subject-modal')" class="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
+                            Batal
+                        </button>
+                        <button type="submit" class="flex-1 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+                            Simpan Perubahan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- ============ DELETE CONFIRMATION MODAL ============ --}}
+        <div id="delete-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+            <div onclick="closeModal('delete-subject-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+            <div class="modal-panel relative w-full max-w-sm scale-95 rounded-[24px] bg-card p-6 text-center opacity-0 shadow-2xl transition-all duration-200 ease-out">
+                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                    <x-icon.trash class="h-7 w-7" />
+                </span>
+
+                <h3 class="mt-4 text-lg font-bold text-foreground">Hapus jadwal ini?</h3>
+                <p id="delete-subject-name" class="mt-2 text-sm leading-relaxed text-muted-foreground"></p>
+
+                <form id="delete-subject-form" method="POST" action="" class="mt-6 flex items-center gap-3">
+                    @csrf
+                    @method('DELETE')
+
+                    <button type="button" onclick="closeModal('delete-subject-modal')" class="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex-1 rounded-full bg-destructive py-2.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90">
+                        Ya, Hapus
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    <script>
+        function switchScheduleDay(day, button) {
+            document.querySelectorAll('.schedule-day-panel').forEach(function (panel) {
+                panel.classList.add('hidden');
+            });
+            document.getElementById('schedule-day-' + day).classList.remove('hidden');
+
+            document.querySelectorAll('.day-tab').forEach(function (tab) {
+                tab.classList.remove('bg-primary', 'text-primary-foreground');
+                tab.classList.add('border', 'border-border', 'bg-card', 'text-muted-foreground');
+            });
+            button.classList.remove('border', 'border-border', 'bg-card', 'text-muted-foreground');
+            button.classList.add('bg-primary', 'text-primary-foreground');
+        }
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            const panel = modal.querySelector('.modal-panel');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            requestAnimationFrame(function () {
+                if (panel) {
+                    panel.classList.remove('opacity-0', 'scale-95');
+                    panel.classList.add('opacity-100', 'scale-100');
+                }
+            });
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            const panel = modal.querySelector('.modal-panel');
+
+            if (panel) {
+                panel.classList.remove('opacity-100', 'scale-100');
+                panel.classList.add('opacity-0', 'scale-95');
+            }
+
+            setTimeout(function () {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 150);
+        }
+
+        function openAddModal() {
+            openModal('add-subject-modal');
+        }
+
+        // Edit butuh fetch ke SubjectController@edit (return JSON), soalnya
+        // controller itu emang didesain buat dipanggil via AJAX, bukan render Blade.
+        function openEditModal(button) {
+            const id = button.dataset.id;
+
+            fetch('/subjects/' + id + '/edit')
+                .then(function (response) { return response.json(); })
+                .then(function (subject) {
+                    document.getElementById('edit-name').value = subject.name ?? '';
+                    document.getElementById('edit-room').value = subject.room ?? '';
+                    document.getElementById('edit-day').value = subject.day ?? '';
+                    document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
+                    document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);
+                    document.getElementById('edit-homework').value = subject.homework ?? '';
+                    document.getElementById('edit-has_exam').checked = !!subject.has_exam;
+
+                    const assignedIds = (subject.items || []).map(function (item) { return item.id; });
+                    document.querySelectorAll('.edit-item-checkbox').forEach(function (checkbox) {
+                        checkbox.checked = assignedIds.includes(Number(checkbox.value));
+                    });
+
+                    document.getElementById('edit-subject-form').action = '/subjects/' + id;
+                    openModal('edit-subject-modal');
+                })
+                .catch(function () {
+                    alert('Gagal ambil data jadwal. Coba lagi.');
+                });
+        }
+
+        function openDeleteModal(button) {
+            document.getElementById('delete-subject-name').textContent =
+                'Jadwal "' + button.dataset.name + '" akan dihapus permanen dan gak bisa dibatalin.';
+            document.getElementById('delete-subject-form').action = '/subjects/' + button.dataset.id;
+            openModal('delete-subject-modal');
+        }
+    </script>
 </x-layouts.dashboard>
