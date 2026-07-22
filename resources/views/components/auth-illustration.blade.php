@@ -1,8 +1,8 @@
 <div class="relative hidden h-full lg:block">
-    {{-- Foto: notebook, pen, buku di atas meja — Unsplash, free license (unsplash.com/license) --}}
+    {{-- Foto: pensil warna-warni — Unsplash (Jess Bailey), free license (unsplash.com/license) --}}
     <img
-        src="https://images.unsplash.com/photo-1654554636261-0f6ba8dac7b4?q=80&w=1600&auto=format&fit=crop"
-        alt="Study desk with notebook and stationery"
+        src="https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=1600&auto=format&fit=crop"
+        alt="Colorful school pencils"
         class="absolute inset-0 h-full w-full object-cover"
     >
 

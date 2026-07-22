@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
     'teacher_id',
     'class_id',
     'name',
-    'room',
+    'location',
     'homework',
     'has_exam',
     'day',

@@ -180,10 +180,10 @@
                                             <x-icon.user class="h-3.5 w-3.5" />
                                             {{ $subject->teacher->name ?? '—' }}
                                         </span>
-                                        @if ($subject->room)
+                                        @if ($subject->location)
                                             <span class="inline-flex items-center gap-1">
                                                 <x-icon.map-pin class="h-3.5 w-3.5" />
-                                                {{ $subject->room }}
+                                                {{ $subject->location }}
                                             </span>
                                         @endif
                                     </div>

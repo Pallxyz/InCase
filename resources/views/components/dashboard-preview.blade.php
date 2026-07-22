@@ -15,9 +15,8 @@
     ];
 
     $schedule = [
-        ['time' => '07:00', 'subject' => 'Matematika', 'room' => 'Ruang 3A'],
-        ['time' => '09:30', 'subject' => 'Bahasa Indonesia', 'room' => 'Ruang 2B'],
-        ['time' => '13:00', 'subject' => 'Olahraga', 'room' => 'Lapangan'],
+        ['time' => '09:30', 'subject' => 'Bahasa Indonesia', 'location' => 'Ruang 2B'],
+        ['time' => '13:00', 'subject' => 'Olahraga', 'location' => 'Lapangan'],
     ];
 
     $notifications = [
@@ -259,7 +258,7 @@
                                     </span>
                                     <div>
                                         <p class="text-sm font-medium text-foreground">{{ $item['subject'] }}</p>
-                                        <p class="text-[11px] text-muted-foreground">{{ $item['room'] }}</p>
+                                        <p class="text-[11px] text-muted-foreground">{{ $item['location'] }}</p>
                                     </div>
                                 </div>
                             @endforeach

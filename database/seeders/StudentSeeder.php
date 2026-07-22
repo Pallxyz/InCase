@@ -14,17 +14,11 @@ class StudentSeeder extends Seeder
         $class = SchoolClass::first();
 
         User::create([
-
-            'name' => 'Nopal',
-
-            'email' => 'student@incase.test',
-
+            'name' => 'Novvalino',
+            'email' => 'novvalino@incase.test',
             'password' => Hash::make('password'),
-
             'role' => 'student',
-
             'class_id' => $class?->id,
-
         ]);
     }
 }

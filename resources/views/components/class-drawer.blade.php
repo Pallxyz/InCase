@@ -3,7 +3,7 @@
         open: false,
         subject: '',
         teacher: '',
-        room: '',
+        location: '',
         start: '',
         end: '',
         items: [],
@@ -12,7 +12,7 @@
         open = true;
         subject = $event.detail.subject;
         teacher = $event.detail.teacher;
-        room = $event.detail.room;
+        location = $event.detail.location;
         start = $event.detail.start;
         end = $event.detail.end;
         items = $event.detail.items;
@@ -71,7 +71,7 @@
                     </span>
                     <div>
                         <p class="text-xs text-muted-foreground">Ruangan</p>
-                        <p class="text-sm font-medium text-foreground" x-text="room"></p>
+                        <p class="text-sm font-medium text-foreground" x-text="location"></p>
                     </div>
                 </div>
 

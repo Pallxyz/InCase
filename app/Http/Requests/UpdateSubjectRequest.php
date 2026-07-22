@@ -34,11 +34,7 @@ class UpdateSubjectRequest extends FormRequest
                 'max:255',
             ],
 
-            'room' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+            'location' => ['nullable', 'string', 'max:255'],
 
             'homework' => [
                 'nullable',

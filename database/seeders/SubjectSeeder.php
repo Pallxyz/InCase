@@ -31,7 +31,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'Matematika',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Monday',
                 'start_time' => '07:00',
                 'end_time' => '08:30',
@@ -44,7 +45,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'Bahasa Indonesia',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Monday',
                 'start_time' => '08:30',
                 'end_time' => '10:00',
@@ -57,7 +59,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'Desain Grafis',
-                'room' => 'Lab RPL',
+                'location'
+                 => 'Lab RPL',
                 'day' => 'Monday',
                 'start_time' => '10:15',
                 'end_time' => '12:15',
@@ -76,7 +79,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'Bahasa Inggris',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Tuesday',
                 'start_time' => '07:00',
                 'end_time' => '08:30',
@@ -89,7 +93,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'Sejarah',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Tuesday',
                 'start_time' => '08:30',
                 'end_time' => '10:00',
@@ -102,7 +107,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'MKK',
-                'room' => 'Lab RPL',
+                'location'
+                 => 'Lab RPL',
                 'day' => 'Tuesday',
                 'start_time' => '10:15',
                 'end_time' => '12:15',
@@ -121,7 +127,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'PKK',
-                'room' => 'Lab RPL',
+                'location'
+                 => 'Lab RPL',
                 'day' => 'Wednesday',
                 'start_time' => '07:00',
                 'end_time' => '09:30',
@@ -134,7 +141,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'PAI',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Wednesday',
                 'start_time' => '09:45',
                 'end_time' => '11:15',
@@ -153,7 +161,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'MPP',
-                'room' => 'Lab RPL',
+                'location'
+                 => 'Lab RPL',
                 'day' => 'Thursday',
                 'start_time' => '07:00',
                 'end_time' => '09:00',
@@ -166,7 +175,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'BK',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Thursday',
                 'start_time' => '09:15',
                 'end_time' => '10:15',
@@ -185,7 +195,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'PJOK',
-                'room' => 'Lapangan',
+                'location'
+                 => 'Lapangan',
                 'day' => 'Friday',
                 'start_time' => '07:00',
                 'end_time' => '09:00',
@@ -198,7 +209,8 @@ class SubjectSeeder extends Seeder
                 'class_id' => $class->id,
                 'teacher_id' => $teacher->id,
                 'name' => 'PPKN',
-                'room' => 'R11',
+                'location'
+                 => 'R11',
                 'day' => 'Friday',
                 'start_time' => '09:15',
                 'end_time' => '10:45',

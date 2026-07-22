@@ -19,14 +19,13 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnDelete();
 
-            // TAMBAHAN
             $table->foreignId('class_id')
                 ->constrained('school_classes')
                 ->cascadeOnDelete();
 
             $table->string('name');
 
-            $table->string('room')->nullable();
+            $table->string('location')->nullable();
 
             $table->text('homework')->nullable();
 

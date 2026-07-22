@@ -6,30 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('subjects', function (Blueprint $table) {
-
+        Schema::table('users', function (Blueprint $table) {
             $table->foreignId('class_id')
-                ->after('teacher_id')
+                ->nullable()
+                ->after('role')
                 ->constrained('school_classes')
-                ->cascadeOnDelete();
-
+                ->nullOnDelete();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('subjects', function (Blueprint $table) {
-
+        Schema::table('users', function (Blueprint $table) {
             $table->dropConstrainedForeignId('class_id');
-
         });
     }
 };

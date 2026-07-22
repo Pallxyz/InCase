@@ -1,10 +1,54 @@
 @php
+    $user = auth()->user();
+
     $navItems = [
-        ['icon' => 'squares-2x2', 'label' => 'Dasbor', 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
-        ['icon' => 'cube', 'label' => 'Barang', 'href' => route('items.index'), 'active' => request()->routeIs('items.index')],
-        ['icon' => 'calendar-days', 'label' => 'Jadwal', 'href' => route('schedule.index'), 'active' => request()->routeIs('schedule.index')],
-        ['icon' => 'clock', 'label' => 'Riwayat Pindai', 'href' => route('scan-history.index'), 'active' => request()->routeIs('scan-history.index')],
-        ['icon' => 'cog-6-tooth', 'label' => 'Pengaturan', 'href' => route('profile.edit'), 'active' => request()->routeIs('profile.edit')],
+        [
+            'icon' => 'squares-2x2',
+            'label' => 'Dasbor',
+            'href' => route('dashboard'),
+            'active' => request()->routeIs('dashboard'),
+        ],
+    ];
+
+    if ($user->role === 'student') {
+
+        $navItems[] = [
+            'icon' => 'cube',
+            'label' => 'Barang',
+            'href' => route('items.index'),
+            'active' => request()->routeIs('items.*'),
+        ];
+
+        $navItems[] = [
+            'icon' => 'calendar-days',
+            'label' => 'Jadwal',
+            'href' => route('schedule.index'),
+            'active' => request()->routeIs('schedule.*'),
+        ];
+
+        $navItems[] = [
+            'icon' => 'clock',
+            'label' => 'Riwayat Pindai',
+            'href' => route('scan-history.index'),
+            'active' => request()->routeIs('scan-history.*'),
+        ];
+
+    } elseif ($user->role === 'teacher') {
+
+        $navItems[] = [
+            'icon' => 'calendar-days',
+            'label' => 'Jadwal',
+            'href' => route('subjects.index'),
+            'active' => request()->routeIs('subjects.*'),
+        ];
+
+    }
+
+    $navItems[] = [
+        'icon' => 'cog-6-tooth',
+        'label' => 'Pengaturan',
+        'href' => route('profile.edit'),
+        'active' => request()->routeIs('profile.*'),
     ];
 @endphp
 
@@ -36,21 +80,30 @@
         </div>
 
         <div class="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
-           <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-        </span>
-        <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold text-foreground">
-                {{ auth()->user()->name }}
-            </p>
-            <p class="truncate text-[11px] text-muted-foreground">
-                {{ auth()->user()->email }}
-            </p>
-        </div>
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            </span>
+
+            <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground">
+                    {{ auth()->user()->name }}
+                </p>
+
+                <p class="truncate text-[11px] text-muted-foreground">
+                    {{ auth()->user()->email }}
+                </p>
+            </div>
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive" aria-label="Keluar">
+
+                <button
+                    type="submit"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                    aria-label="Keluar">
+
                     <x-icon.arrow-left-on-rectangle class="h-4 w-4" />
+
                 </button>
             </form>
         </div>

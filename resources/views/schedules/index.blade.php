@@ -101,10 +101,10 @@
                                             <x-icon.user class="h-4 w-4" />
                                             {{ $subject->teacher->name ?? '—' }}
                                         </span>
-                                        @if ($subject->room)
+                                        @if ($subject->location)
                                             <span class="inline-flex items-center gap-1.5">
                                                 <x-icon.map-pin class="h-4 w-4" />
-                                                Ruang {{ $subject->room }}
+                                                Ruang {{ $subject->location }}
                                             </span>
                                         @endif
                                     </div>
@@ -228,10 +228,10 @@
                                                 <x-icon.user class="h-3.5 w-3.5" />
                                                 {{ $subject->teacher->name ?? '—' }}
                                             </span>
-                                            @if ($subject->room)
+                                            @if ($subject->location)
                                                 <span class="inline-flex items-center gap-1.5">
                                                     <x-icon.map-pin class="h-3.5 w-3.5" />
-                                                    Ruang {{ $subject->room }}
+                                                    Ruang {{ $subject->location }}
                                                 </span>
                                             @endif
                                         </div>
@@ -313,8 +313,8 @@
 
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Ruangan</label>
-                        <input type="text" name="room" value="{{ old('room') }}" placeholder="Contoh: A203" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
-                        @error('room')
+                        <input type="text" name="location" value="{{ old('location') }}" placeholder="Contoh: A203" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        @error('location')
                             <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
@@ -416,8 +416,8 @@
 
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Ruangan</label>
-                        <input type="text" name="room" id="edit-room" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
-                        @error('room')
+                        <input type="text" name="location" id="edit-location" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        @error('location')
                             <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
@@ -579,7 +579,7 @@
                 .then(function (response) { return response.json(); })
                 .then(function (subject) {
                     document.getElementById('edit-name').value = subject.name ?? '';
-                    document.getElementById('edit-room').value = subject.room ?? '';
+                    document.getElementById('edit-location').value = subject.location ?? '';
                     document.getElementById('edit-day').value = subject.day ?? '';
                     document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
                     document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);

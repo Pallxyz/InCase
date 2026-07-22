@@ -1,7 +1,7 @@
 @props([
     'subject' => '',
     'teacher' => '',
-    'room' => '',
+    'location' => '',
     'start' => '',
     'end' => '',
     'items' => [],
@@ -13,7 +13,7 @@
     @click="$dispatch('open-class-drawer', {
         subject: '{{ $subject }}',
         teacher: '{{ $teacher }}',
-        room: '{{ $room }}',
+        location: '{{ $location }}',
         start: '{{ $start }}',
         end: '{{ $end }}',
         items: {{ collect($items)->pluck('label')->toJson() }},
@@ -47,7 +47,7 @@
     <div class="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
         <span class="inline-flex items-center gap-1.5">
             <x-icon.map-pin class="h-4 w-4" />
-            {{ $room }}
+            {{ $ }}
         </span>
         <span class="inline-flex items-center gap-1.5">
             <x-icon.clock class="h-4 w-4" />
