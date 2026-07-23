@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Models\SchoolClass;
 
 class ProfileController extends Controller
 {
@@ -16,8 +17,12 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user()->load('schoolClass');
+        $classes = SchoolClass::orderBy('name')->get();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'classes' => $classes,
         ]);
     }
 
@@ -26,13 +31,42 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $data = $request->validated();
+
+        if (
+            isset($data['class_id']) &&
+            $data['class_id'] != $user->class_id
+        ) {
+            if ($user->class_changed_at) {
+                return back()->withErrors([
+                    'class_id' => 'Kelas hanya dapat diubah satu kali.',
+                ]);
+            }
+
+            $data['class_changed_at'] = now();
         }
 
-        $request->user()->save();
+        if ($user->phone) {
+            unset($data['phone']);
+        }
+
+        if ($user->student_id) {
+            unset($data['student_id']);
+        }
+
+        if ($user->school_name) {
+            unset($data['school_name']);
+        }
+        
+        $user->fill($data);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
