@@ -21,5 +21,17 @@ class TeacherSeeder extends Seeder
                 'class_id' => null,
             ]
         );
+
+        User::updateOrCreate(
+            [
+                'email' => 'maul@incase.test',
+            ],
+            [
+                'name' => 'Maul',
+                'password' => Hash::make('password'),
+                'role' => 'teacher',
+                'class_id' => null,
+            ]
+        );
     }
 }
