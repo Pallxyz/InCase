@@ -61,14 +61,14 @@
                                 </button>
                             </div>
 
-                            <div class="flex flex-col items-center gap-1 text-center sm:ml-auto sm:items-end sm:text-right">
+                           <div class="flex flex-col items-center gap-1 text-center sm:ml-auto sm:items-end sm:text-right">
                                 <div class="flex items-center gap-2">
                                     <h2 class="text-lg font-bold text-foreground">{{ $user->name ?? 'Nopal' }}</h2>
                                     <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                                        Siswa
+                                        {{ ucfirst($user->role ?? 'student') === 'Teacher' ? 'Guru' : 'Siswa' }}
                                     </span>
                                 </div>
-                                <p class="text-sm text-muted-foreground">SMPN 1</p>
+                                <p class="text-sm text-muted-foreground">{{ $user->school_name ?? '-' }}</p>
                             </div>
                         </div>
 
@@ -107,42 +107,102 @@
 
                             <div>
                                 <label class="mb-1.5 block text-sm font-medium text-foreground">Nomor Telepon</label>
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    placeholder="0812xxxxxxxx"
-                                    class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                >
+                                @if ($user->phone)
+                                    <input
+                                        type="text"
+                                        value="{{ $user->phone }}"
+                                        disabled
+                                        class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+                                    >
+                                    <p class="mt-1.5 text-xs text-muted-foreground">Nomor telepon sudah diatur dan tidak dapat diubah.</p>
+                                @else
+                                    <input
+                                        type="text"
+                                        name="phone"
+                                        value="{{ old('phone') }}"
+                                        placeholder="0812xxxxxxxx"
+                                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                    >
+                                @endif
+                                @error('phone')
+                                    <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
                                 <label class="mb-1.5 block text-sm font-medium text-foreground">Sekolah</label>
-                                <input
-                                    type="text"
-                                    name="school"
-                                    value="SMPN 1"
-                                    class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                >
+                                @if ($user->school_name)
+                                    <input
+                                        type="text"
+                                        value="{{ $user->school_name }}"
+                                        disabled
+                                        class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+                                    >
+                                    <p class="mt-1.5 text-xs text-muted-foreground">Sekolah sudah diatur dan tidak dapat diubah.</p>
+                                @else
+                                    <input
+                                        type="text"
+                                        name="school_name"
+                                        value="{{ old('school_name') }}"
+                                        placeholder="Nama sekolah"
+                                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                    >
+                                @endif
+                                @error('school_name')
+                                    <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
                                 <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
-                                <input
-                                    type="text"
-                                    name="class"
-                                    value="9"
-                                    class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                >
+                                @if ($user->class_changed_at)
+                                    <input
+                                        type="text"
+                                        value="{{ $user->schoolClass->name ?? '-' }}"
+                                        disabled
+                                        class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+                                    >
+                                    <p class="mt-1.5 text-xs text-muted-foreground">Kelas hanya dapat diubah satu kali dan sudah pernah diubah.</p>
+                                @else
+                                    <select
+                                        name="class_id"
+                                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                    >
+                                        <option value="" disabled>Pilih kelas</option>
+                                        @foreach ($classes as $class)
+                                            <option value="{{ $class->id }}" @selected((string) old('class_id', $user->class_id) === (string) $class->id)>
+                                                {{ $class->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                                @error('class_id')
+                                    <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
                                 <label class="mb-1.5 block text-sm font-medium text-foreground">Nomor Induk Siswa</label>
-                                <input
-                                    type="text"
-                                    name="student_id"
-                                    placeholder="Contoh: 2026001234"
-                                    class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                                >
+                                @if ($user->student_id)
+                                    <input
+                                        type="text"
+                                        value="{{ $user->student_id }}"
+                                        disabled
+                                        class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+                                    >
+                                    <p class="mt-1.5 text-xs text-muted-foreground">NIS sudah diatur dan tidak dapat diubah.</p>
+                                @else
+                                    <input
+                                        type="text"
+                                        name="student_id"
+                                        value="{{ old('student_id') }}"
+                                        placeholder="Contoh: 2026001234"
+                                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                                    >
+                                @endif
+                                @error('student_id')
+                                    <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                @enderror
                             </div>
                         </form>
                     </div>

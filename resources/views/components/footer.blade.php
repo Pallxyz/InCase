@@ -25,10 +25,10 @@
             <p class="max-w-xl text-pretty leading-relaxed text-primary-foreground/80">
                 Mulai gunakan InCase hari ini dan biarkan RFID, IoT, dan AI menjaga kelengkapan tasmu.
             </p>
-            <x-ui.button size="lg" class="rounded-full bg-secondary px-7 font-semibold text-secondary-foreground hover:bg-secondary/90">
-                Mulai Sekarang
-                <x-icon.arrow-right class="h-4 w-4" />
-            </x-ui.button>
+           <x-ui.button href="{{ route('register') }}" size="lg" class="rounded-full bg-secondary px-7 font-semibold text-secondary-foreground hover:bg-secondary/90">
+    Mulai Sekarang
+    <x-icon.arrow-right class="h-4 w-4" />
+</x-ui.button>
         </div>
 
         {{-- Links --}}

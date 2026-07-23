@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        $classes = SchoolClass::orderBy('grade')->orderBy('major')->get();
+
+        return view('auth.register', compact('classes'));
     }
 
     /**
@@ -33,12 +36,17 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'school_name' => ['required', 'string', 'max:255'],
+            'class_id' => ['required', 'exists:school_classes,id'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'school_name' => $request->school_name,
+            'class_id' => $request->class_id,
+            'role' => 'student',
             'password' => Hash::make($request->password),
         ]);
 

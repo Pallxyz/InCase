@@ -14,14 +14,6 @@
     $todaySubjects = $subjects->where('day', $todayDay)->values();
 
     $isTeacher = auth()->check() && (auth()->user()->role ?? null) === 'teacher';
-
-    // SubjectController@index belum ngirim $items ke view ini, padahal modal
-    // Tambah/Edit butuh daftar barang buat multi-select. Query langsung di sini
-    // (data asli dari tabel items, BUKAN array dummy) sebagai jalan pintas.
-    // Idealnya nanti dipindah ke SubjectController::index() dan di-pass via compact().
-    $availableItems = $isTeacher
-        ? \App\Models\Item::where('user_id', auth()->id())->orderBy('name')->get(['id', 'name'])
-        : collect();
 @endphp
 
 <x-layouts.dashboard title="Jadwal — InCase">
@@ -303,10 +295,25 @@
                     @csrf
                     <input type="hidden" name="is_active" value="1">
 
-                    <div>
+                   <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Pelajaran</label>
                         <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: Matematika" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
                         @error('name')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
+                        <select name="class_id" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            <option value="" disabled selected>Pilih kelas</option>
+                            @foreach ($classes as $class)
+                                <option value="{{ $class->id }}" @selected((string) old('class_id') === (string) $class->id)>
+                                    {{ $class->grade }} {{ $class->major }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('class_id')
                             <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
@@ -364,7 +371,7 @@
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Barang Wajib</label>
                         <div class="flex flex-col divide-y divide-border rounded-xl border border-border">
-                            @forelse ($availableItems as $item)
+                            @forelse ($items as $item)
                                 <label class="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-muted">
                                     <input type="checkbox" name="items[]" value="{{ $item->id }}" class="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30">
                                     <span class="text-sm text-foreground">{{ $item->name }}</span>
@@ -405,8 +412,7 @@
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="is_active" value="1">
-
-                    <div>
+<div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Pelajaran</label>
                         <input type="text" name="name" id="edit-name" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
                         @error('name')
@@ -415,8 +421,21 @@
                     </div>
 
                     <div>
+                        <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
+                        <select name="class_id" id="edit-class_id" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                            <option value="" disabled>Pilih kelas</option>
+                            @foreach ($classes as $class)
+                                <option value="{{ $class->id }}">{{ $class->grade }} {{ $class->major }}</option>
+                            @endforeach
+                        </select>
+                        @error('class_id')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Ruangan</label>
-                        <input type="text" name="location" id="edit-location" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
+                        <input type="text" name="location" id="edit-location"
                         @error('location')
                             <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
@@ -467,7 +486,7 @@
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Barang Wajib</label>
                         <div class="flex flex-col divide-y divide-border rounded-xl border border-border">
-                            @forelse ($availableItems as $item)
+                            @forelse ($items as $item)
                                 <label class="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-muted">
                                     <input type="checkbox" name="items[]" value="{{ $item->id }}" class="edit-item-checkbox h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30">
                                     <span class="text-sm text-foreground">{{ $item->name }}</span>
@@ -581,6 +600,7 @@
                     document.getElementById('edit-name').value = subject.name ?? '';
                     document.getElementById('edit-location').value = subject.location ?? '';
                     document.getElementById('edit-day').value = subject.day ?? '';
+                    document.getElementById('edit-class_id').value = subject.class_id ?? '';
                     document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
                     document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);
                     document.getElementById('edit-homework').value = subject.homework ?? '';
