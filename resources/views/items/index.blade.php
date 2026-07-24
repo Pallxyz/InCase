@@ -23,6 +23,7 @@
     $activeItems = $items->where('status', 'active')->count();
     $archivedItems = $items->where('status', 'archived')->count();
     $rfidRegistered = $items->whereNotNull('rfid_uid')->count();
+    
     // Modal mana yang harus dibuka ulang otomatis kalau validasi gagal
     $reopenModal = null;
     if ($errors->any()) {
@@ -169,6 +170,7 @@
                                 <thead class="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                                     <tr class="border-b border-border">
                                         <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Barang</th>
+                                        <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</th>
                                         <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kategori</th>
                                         <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">UID RFID</th>
                                         <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
@@ -192,6 +194,12 @@
                                                     </span>
                                                     <p class="font-semibold text-foreground">{{ $item->name }}</p>
                                                 </div>
+                                            </td>
+
+                                            <td class="px-6 py-5 max-w-xs">
+                                                <p class="text-sm text-muted-foreground line-clamp-2">
+                                                    {{ $item->description ?: '-' }}
+                                                </p>
                                             </td>
                                             <td class="px-6 py-5">
                                                 <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
@@ -224,19 +232,8 @@
                                             </td>
                                             <td class="px-6 py-5 text-right">
                                                 <div class="relative inline-block text-left">
-                                                    <button
-                                                        type="button"
-                                                        onclick="toggleActionMenu(event, 'action-menu-{{ $item->id }}')"
-                                                        class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                                                        aria-label="Buka menu aksi"
-                                                    >
-                                                        <x-icon.ellipsis-vertical class="h-4 w-4" />
-                                                    </button>
 
-                                                    <div
-                                                        id="action-menu-{{ $item->id }}"
-                                                        class="action-menu absolute right-0 z-20 mt-2 hidden w-40 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
-                                                    >
+
                                                         <button
                                                             type="button"
                                                             data-id="{{ $item->id }}"
@@ -333,6 +330,12 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                @if ($item->description)
+                                <p class="mt-2.5 text-xs text-muted-foregration line-clam-2">
+                                    {{ $item->description }}
+                                </p>
+                                @endif
 
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
                                     <span class="inline-flex items-center rounded-md bg-muted px-2.5 py-1 font-mono text-xs text-foreground">
