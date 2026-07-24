@@ -50,6 +50,13 @@ class ProfileUpdateRequest extends FormRequest
                 'nullable',
                 'exists:school_classes,id',
             ],
+
+            'avatar' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:2048',
+            ],
         ];
     }
 

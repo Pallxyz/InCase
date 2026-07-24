@@ -295,7 +295,7 @@
                     @csrf
                     <input type="hidden" name="is_active" value="1">
 
-                   <div>
+                    <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Pelajaran</label>
                         <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: Matematika" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
                         @error('name')
@@ -309,7 +309,7 @@
                             <option value="" disabled selected>Pilih kelas</option>
                             @foreach ($classes as $class)
                                 <option value="{{ $class->id }}" @selected((string) old('class_id') === (string) $class->id)>
-                                    {{ $class->grade }} {{ $class->major }}
+                                    {{ $class->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -412,7 +412,8 @@
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="is_active" value="1">
-<div>
+
+                    <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Pelajaran</label>
                         <input type="text" name="name" id="edit-name" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
                         @error('name')
@@ -425,7 +426,7 @@
                         <select name="class_id" id="edit-class_id" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
                             <option value="" disabled>Pilih kelas</option>
                             @foreach ($classes as $class)
-                                <option value="{{ $class->id }}">{{ $class->grade }} {{ $class->major }}</option>
+                                <option value="{{ $class->id }}">{{ $class->name }}</option>
                             @endforeach
                         </select>
                         @error('class_id')
@@ -435,7 +436,7 @@
 
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">Ruangan</label>
-                        <input type="text" name="location" id="edit-location"
+                        <input type="text" name="location" id="edit-location" class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10">
                         @error('location')
                             <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
