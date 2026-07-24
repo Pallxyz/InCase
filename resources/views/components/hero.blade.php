@@ -29,15 +29,14 @@
                 RFID, IoT, dan Smart Reminder.
             </p>
 
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                <x-ui.button size="lg" class="rounded-full px-7 text-base font-semibold">
+            <div class="mt-8 flex items-center gap-4">
+                <x-ui.button href="{{ route('register') }}" size="lg" class="rounded-full px-8 text-base font-semibold shadow-lg shadow-primary/25">
                     Mulai Sekarang
                     <x-icon.arrow-right class="h-4 w-4" />
                 </x-ui.button>
-                <x-ui.button size="lg" variant="outline" class="rounded-full border-border bg-card px-7 text-base font-semibold">
-                    <x-icon.play class="h-4 w-4" />
-                    Lihat Cara Kerja
-                </x-ui.button>
+                <span class="text-sm text-muted-foreground">
+                    Siap Digunakan Untuk Sekolah
+                </span>
             </div>
 
             <div class="mt-10 flex items-center gap-6 text-sm text-muted-foreground">

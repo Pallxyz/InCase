@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use App\Models\SchoolClass;
 
@@ -35,6 +36,16 @@ class ProfileController extends Controller
 
         $data = $request->validated();
 
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        } else {
+            unset($data['avatar']);
+        }
+
         if (
             isset($data['class_id']) &&
             $data['class_id'] != $user->class_id
@@ -59,7 +70,7 @@ class ProfileController extends Controller
         if ($user->school_name) {
             unset($data['school_name']);
         }
-        
+
         $user->fill($data);
 
         if ($user->isDirty('email')) {

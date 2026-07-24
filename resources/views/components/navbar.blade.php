@@ -28,12 +28,12 @@
             @endforeach
         </div>
 
-        <div class="hidden items-center gap-3 md:flex">
-            <x-ui.button variant="ghost" class="rounded-full font-medium">
-                Masuk
-            </x-ui.button>
-            <x-ui.button class="rounded-full font-medium">Mulai Sekarang</x-ui.button>
-        </div>
+       <div class="hidden items-center gap-3 md:flex">
+    <x-ui.button variant="ghost" href="{{ route('login') }}" class="rounded-full font-medium">
+        Masuk
+    </x-ui.button>
+    <x-ui.button href="{{ route('register') }}" class="rounded-full font-medium">Mulai Sekarang</x-ui.button>
+</div>
 
         <button
             type="button"
@@ -58,11 +58,11 @@
                 </a>
             @endforeach
             <div class="mt-3 flex flex-col gap-2">
-                <x-ui.button variant="ghost" class="w-full rounded-full font-medium">
-                    Masuk
-                </x-ui.button>
-                <x-ui.button class="w-full rounded-full font-medium">Mulai Sekarang</x-ui.button>
-            </div>
+    <x-ui.button variant="ghost" href="{{ route('login') }}" class="w-full rounded-full font-medium">
+        Masuk
+    </x-ui.button>
+    <x-ui.button href="{{ route('register') }}" class="w-full rounded-full font-medium">Mulai Sekarang</x-ui.button>
+</div>
         </div>
     </div>
 </header>

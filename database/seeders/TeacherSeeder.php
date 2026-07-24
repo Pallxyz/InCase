@@ -23,5 +23,17 @@ class TeacherSeeder extends Seeder
                 'school_name' => 'SMKN 1 Cirebon',
             ]
         );
+
+        User::updateOrCreate(
+            [
+                'email' => 'maul@incase.test',
+            ],
+            [
+                'name' => 'Maul',
+                'password' => Hash::make('password'),
+                'role' => 'teacher',
+                'class_id' => null,
+            ]
+        );
     }
 }

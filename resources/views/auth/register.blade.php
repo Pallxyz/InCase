@@ -44,26 +44,61 @@
                 />
             </div>
 
-            {{-- Baris 2 — 2 kolom: School | Class --}}
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <x-auth-input
-                    icon="building-library"
-                    label="School"
-                    name="school"
-                    type="text"
-                    placeholder="Nama sekolah"
-                    required
-                    autocomplete="organization"
-                />
+           {{-- Baris 2 — School --}}
+            <x-auth-input
+                icon="building-library"
+                label="School"
+                name="school_name"
+                type="text"
+                placeholder="Nama sekolah"
+                required
+                autocomplete="organization"
+                value="{{ old('school_name') }}"
+            />
 
-                <x-auth-input
-                    icon="academic-cap"
-                    label="Class"
-                    name="class"
-                    type="text"
-                    placeholder="Contoh: 9A"
-                    required
-                />
+            {{-- Baris 3 — 2 kolom: Tingkat | Kelas (cascading) --}}
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="grade-select" class="mb-1.5 block text-sm font-medium text-foreground">
+                        Tingkat
+                    </label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
+                            <x-icon.academic-cap class="h-5 w-5" />
+                        </span>
+                        <select
+                            id="grade-select"
+                            class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-11 pr-3.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                        >
+                            <option value="" disabled selected>Pilih tingkat</option>
+                            @foreach ($classes->pluck('grade')->unique() as $grade)
+                                <option value="{{ $grade }}">{{ $grade }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="class-select" class="mb-1.5 block text-sm font-medium text-foreground">
+                        Kelas
+                    </label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground">
+                            <x-icon.tag class="h-5 w-5" />
+                        </span>
+                        <select
+                            name="class_id"
+                            id="class-select"
+                            required
+                            class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-11 pr-3.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                        >
+                            <option value="" disabled selected>Pilih tingkat dulu</option>
+                        </select>
+                    </div>
+                    @error('class_id')
+                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
 
             {{-- Baris 3 — 2 kolom: Password | Confirm Password --}}
@@ -128,4 +163,51 @@
             </a>
         </p>
     </div>
+   @php
+        $classesData = $classes->map(function ($c) {
+            return [
+                'id' => $c->id,
+                'grade' => $c->grade,
+                'label' => $c->grade . ' ' . $c->major,
+            ];
+        });
+    @endphp
+
+    <script>
+        const classesData = @json($classesData);
+
+        const gradeSelect = document.getElementById('grade-select');
+        const classSelect = document.getElementById('class-select');
+
+        function populateClasses(grade) {
+            const filtered = classesData.filter(function (c) { return c.grade === grade; });
+
+            if (filtered.length === 0) {
+                classSelect.innerHTML = '<option value="" disabled selected>Tidak ada kelas</option>';
+                return;
+            }
+
+            classSelect.innerHTML = '<option value="" disabled selected>Pilih kelas</option>' +
+                filtered.map(function (c) {
+                    return '<option value="' + c.id + '">' + c.label + '</option>';
+                }).join('');
+        }
+
+        gradeSelect.addEventListener('change', function () {
+            populateClasses(this.value);
+        });
+
+        @if (old('class_id'))
+            (function () {
+                const oldClass = classesData.find(function (c) {
+                    return String(c.id) === '{{ old('class_id') }}';
+                });
+                if (oldClass) {
+                    gradeSelect.value = oldClass.grade;
+                    populateClasses(oldClass.grade);
+                    classSelect.value = oldClass.id;
+                }
+            })();
+        @endif
+    </script>
 </x-layouts.auth>
