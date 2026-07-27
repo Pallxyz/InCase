@@ -15,6 +15,8 @@ Route::view('/', 'landing.index')->name('home');
 
 Route::middleware('auth')->group(function () {
 
+    Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
