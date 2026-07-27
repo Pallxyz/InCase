@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Subject;
+use App\Models\SchoolClass; // <-- tambah ini
 use Illuminate\Support\Facades\Auth;
 
 class ScheduleController extends Controller
@@ -17,6 +18,8 @@ class ScheduleController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        return view('schedules.index', compact('subjects'));
+        $classes = SchoolClass::orderBy('grade')->orderBy('major')->get(); // <-- tambah ini
+
+        return view('schedules.index', compact('subjects', 'classes')); // <-- tambah 'classes'
     }
 }
