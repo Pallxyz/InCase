@@ -1,4 +1,5 @@
 import './bootstrap';
+import './push';
 import Alpine from 'alpinejs';
 
 import TomSelect from "tom-select";

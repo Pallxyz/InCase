@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
     <meta name="theme-color" content="#ffffff">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="vapid-public-key" content="{{ config('webpush.vapid.public_key') }}">
 
     <title>{{ $title ?? 'InCase — Pastikan Semua Barangmu Siap Sebelum Berangkat' }}</title>
     <meta name="description" content="InCase adalah Smart School Bag Management System berbasis RFID, IoT, dan AI yang membantu siswa memastikan seluruh perlengkapan sekolah telah siap sebelum berangkat.">
