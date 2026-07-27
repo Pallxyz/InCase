@@ -15,14 +15,9 @@ class StoreItemRequest extends FormRequest
     {
         return [
             'name' => 'required|max:255',
-
             'category' => 'required|in:Book,Stationery,Electronics,Sports,Personal,Others',
-
             'rfid_uid' => 'required|unique:items,rfid_uid',
-
             'description' => 'nullable|max:500',
-
-            'status' => 'required|in:active,archived',
         ];
     }
 }
