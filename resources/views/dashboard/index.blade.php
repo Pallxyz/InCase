@@ -3,11 +3,25 @@
     // Semua variabel di bawah ini DIAMBIL/DITURUNKAN dari data asli
     // yang dikirim DashboardController: $user, $todaySubjects, $todayScans,
     // $items, $packedCount, $totalItems, $progress.
-    // Gak ada array/data fiktif lagi di sini.
     // ============================================
 
     $dayNames = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'];
     $todayName = $dayNames[now()->dayOfWeekIso] ?? 'Senin';
+
+    $monthNames = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+    ];
+    $todayFull = $todayName . ', ' . now()->day . ' ' . $monthNames[now()->month] . ' ' . now()->year;
+
+    $hour = now()->hour;
+    $greeting = match (true) {
+        $hour < 11 => 'Selamat pagi',
+        $hour < 15 => 'Selamat siang',
+        $hour < 18 => 'Selamat sore',
+        default => 'Selamat malam',
+    };
 
     // Peta kategori Item (enum asli: Book, Stationery, Electronics, Sports, Personal, Others) ke icon
     $categoryIcons = [
@@ -22,6 +36,18 @@
     // Barang yang udah kescan hari ini, diturunkan dari $todayScans (bukan array baru)
     $scannedItemIds = $todayScans->pluck('item_id')->unique();
 
+    // Barang yang BELUM discan hari ini
+    $missingItems = $items->reject(fn ($item) => $scannedItemIds->contains($item->id))->values();
+
+    // Terbaru duluan
+    $latestScansSorted = $todayScans->sortByDesc('scanned_at')->values();
+
+    $lastScan = $latestScansSorted->first();
+    $lastScanTime = $lastScan ? \Carbon\Carbon::parse($lastScan->scanned_at)->format('H:i') : null;
+    $lastScanNote = $lastScan
+        ? 'Hari ini · ' . \Carbon\Carbon::parse($lastScan->scanned_at)->diffForHumans(null, true) . ' lalu'
+        : 'Belum ada pindaian hari ini';
+
     // Pengingat Guru = turunan langsung dari $todaySubjects, bukan tabel/array reminder terpisah.
     // Satu subject bisa nyumbang 2 baris (PR + Ujian) kalau dua-duanya ada.
     $teacherReminders = collect();
@@ -33,9 +59,6 @@
             $teacherReminders->push(['subject' => $subject->name, 'text' => 'Ujian hari ini']);
         }
     }
-
-    // Terbaru duluan
-    $latestScansSorted = $todayScans->sortByDesc('scanned_at')->values();
 @endphp
 
 <x-layouts.dashboard title="Dasbor — InCase">
@@ -50,7 +73,7 @@
         ></div>
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64">
-            {{-- Top bar mobile: cuma nongol di bawah breakpoint lg, isinya tombol buka sidebar --}}
+            {{-- Top bar mobile --}}
             <div class="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
                 <button
                     type="button"
@@ -68,76 +91,103 @@
                 {{-- ============ SECTION 1 — GREETING ============ --}}
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                        Selamat Pagi, Nopal
+                        {{ $greeting }}, {{ $user->name }}
                     </h1>
                     <p class="mt-1.5 text-sm text-muted-foreground">
-                        Hari ini {{ $todayName }}. Kamu punya {{ $todaySubjects->count() }} kelas hari ini.
+                        {{ $todayFull }}
                     </p>
                 </div>
 
-                {{-- ============ SECTION 2 — CHECKLIST + PROGRESS ============ --}}
-                <div class="mt-6 grid gap-6 lg:grid-cols-3">
-                    {{-- Checklist (fitur utama) --}}
-                    <div class="rounded-[24px] border border-border bg-card p-6 shadow-sm lg:col-span-2">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-bold text-foreground">Checklist Tas Hari Ini</h2>
-                            <span class="text-xs font-medium text-muted-foreground">Otomatis dari RFID</span>
-                        </div>
-
-                        <div class="mt-5 flex flex-col gap-1">
-                            @forelse ($items as $item)
-                                @php $packed = $scannedItemIds->contains($item->id); @endphp
-                                <div class="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors duration-300 {{ $packed ? 'bg-primary/5' : '' }}">
-                                    {{-- Kotak checklist custom, bukan checkbox asli — statusnya cuma ditampilkan, gak bisa diklik user --}}
-                                    <span
-                                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition-all duration-300 {{ $packed ? 'border-primary bg-primary' : 'border-border bg-background' }}"
-                                        aria-hidden="true"
-                                    >
-                                        @if ($packed)
-                                            <x-icon.check class="h-4 w-4 text-primary-foreground" />
-                                        @endif
-                                    </span>
-
-                                    <x-dynamic-component
-                                        :component="'icon.' . ($categoryIcons[$item->category] ?? 'cube')"
-                                        class="h-4 w-4 shrink-0 transition-colors duration-300 {{ $packed ? 'text-muted-foreground/50' : 'text-primary' }}"
-                                    />
-
-                                    <span
-                                        class="text-sm font-medium transition-all duration-300 {{ $packed ? 'text-muted-foreground/60 line-through' : 'text-foreground' }}"
-                                    >
-                                        {{ $item->name }}
-                                    </span>
-                                </div>
-                            @empty
-                                <p class="py-4 text-center text-sm text-muted-foreground">
-                                    Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
-                                </p>
-                            @endforelse
+                {{-- ============ SECTION 2 — STAT CARDS ============ --}}
+                <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="rounded-[24px] border border-success/20 bg-success/5 p-6">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15 text-success">
+                            <x-icon.check-circle class="h-5 w-5" />
+                        </span>
+                        <p class="mt-4 text-sm text-muted-foreground">Barang Lengkap</p>
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                            <p class="text-2xl font-bold text-foreground">{{ $packedCount }}/{{ $totalItems }}</p>
+                            <span class="rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                                {{ $progress }}% siap
+                            </span>
                         </div>
                     </div>
 
-                    {{-- Progress Card --}}
                     <div class="rounded-[24px] border border-border bg-card p-6 shadow-sm">
-                        <h2 class="text-sm font-semibold text-foreground">Tas Hari Ini</h2>
-                        <p class="mt-1 text-2xl font-bold text-foreground">
-                            {{ $packedCount }} / {{ $totalItems }} <span class="text-sm font-medium text-muted-foreground">Barang Masuk</span>
-                        </p>
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <x-icon.viewfinder-circle class="h-5 w-5" />
+                        </span>
+                        <p class="mt-4 text-sm text-muted-foreground">Scan Terakhir</p>
+                        <p class="mt-1 text-2xl font-bold text-foreground">{{ $lastScanTime ?? '--:--' }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">{{ $lastScanNote }}</p>
+                    </div>
+                </div>
 
-                        <div class="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                            <div
-                                class="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                                style="width: {{ $progress }}%"
-                            ></div>
+                {{-- ============ SECTION 2.5 — BARANG TERTINGGAL ============ --}}
+                <div class="mt-6 rounded-[24px] border border-warning/30 bg-warning/5 p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-warning">
+                            <x-icon.exclamation-triangle class="h-4 w-4" />
+                            <h2 class="text-sm font-semibold text-foreground">Barang Tertinggal</h2>
                         </div>
-                        <p class="mt-2 text-right text-xs font-semibold text-primary">{{ $progress }}%</p>
-
-                        @if ($progress === 100)
-                            <div class="mt-4 flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2.5 text-xs font-medium text-success">
-                                <x-icon.check-circle class="h-4 w-4 shrink-0" />
-                                Semua barang wajib udah masuk tas kamu.
-                            </div>
+                        @if ($missingItems->count() > 0)
+                            <span class="rounded-full bg-warning/10 px-3 py-1 text-xs font-semibold text-warning">
+                                {{ $missingItems->count() }} barang
+                            </span>
                         @endif
+                    </div>
+
+                    <div class="mt-4 flex flex-col gap-3">
+                        @forelse ($missingItems as $item)
+                            <div class="flex items-center gap-3 rounded-xl bg-card px-4 py-3 shadow-sm">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                                    <x-dynamic-component
+                                        :component="'icon.' . ($categoryIcons[$item->category] ?? 'cube')"
+                                        class="h-4 w-4"
+                                    />
+                                </span>
+                                <div>
+                                    <p class="text-sm font-semibold text-foreground">{{ $item->name }}</p>
+                                    <p class="text-xs text-muted-foreground">Belum terdeteksi hari ini</p>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm font-medium text-success">
+                                <x-icon.check-circle class="h-4 w-4" />
+                                Semua barang wajib sudah masuk tas kamu.
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <div class="mt-5 h-2 w-full overflow-hidden rounded-full bg-warning/10">
+                        <div class="h-full rounded-full bg-primary transition-all duration-500 ease-out" style="width: {{ $progress }}%"></div>
+                    </div>
+                </div>
+
+                {{-- ============ SECTION 2.6 — BARANG HARI INI ============ --}}
+                <div class="mt-6 rounded-[24px] border border-border bg-card p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold text-muted-foreground">Barang Hari Ini</h2>
+
+                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        @forelse ($items as $item)
+                            @php $packed = $scannedItemIds->contains($item->id); @endphp
+                            <div class="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
+                                <x-dynamic-component
+                                    :component="'icon.' . ($categoryIcons[$item->category] ?? 'cube')"
+                                    class="h-4 w-4 shrink-0 text-primary"
+                                />
+                                <span class="flex-1 truncate text-sm font-medium text-foreground">{{ $item->name }}</span>
+                                @if ($packed)
+                                    <x-icon.check-circle class="h-4 w-4 shrink-0 text-success" />
+                                @else
+                                    <x-icon.exclamation-triangle class="h-4 w-4 shrink-0 text-warning" />
+                                @endif
+                            </div>
+                        @empty
+                            <p class="col-span-2 py-4 text-center text-sm text-muted-foreground">
+                                Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
+                            </p>
+                        @endforelse
                     </div>
                 </div>
 

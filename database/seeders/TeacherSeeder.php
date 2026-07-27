@@ -19,6 +19,20 @@ class TeacherSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'teacher',
                 'class_id' => null,
+                'phone' => '081298765432',
+                'school_name' => 'SMKN 1 Cirebon',
+            ]
+        );
+
+        User::updateOrCreate(
+            [
+                'email' => 'maul@incase.test',
+            ],
+            [
+                'name' => 'Maul',
+                'password' => Hash::make('password'),
+                'role' => 'teacher',
+                'class_id' => null,
             ]
         );
     }

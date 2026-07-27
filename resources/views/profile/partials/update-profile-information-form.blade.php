@@ -1,64 +1,166 @@
-<section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Profile Information') }}
-        </h2>
+@php
+    $role = strtolower($user->role ?? 'student');
+@endphp
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information and email address.") }}
-        </p>
-    </header>
+<section class="rounded-[24px] border border-border bg-card p-6 shadow-sm sm:p-8">
 
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
+    @if (session('status') === 'profile-updated')
+        <div class="mb-6 rounded-xl bg-success/10 px-4 py-3 text-sm font-medium text-success">
+            Profil berhasil diperbarui.
+        </div>
+    @endif
+
+    <div class="flex flex-col items-center gap-4 sm:flex-row">
+        <span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-primary text-3xl font-bold text-primary-foreground">
+            {{ strtoupper(substr($user->name,0,1)) }}
+        </span>
+
+        <div class="flex flex-col items-center sm:items-start">
+            <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+            >
+                <x-icon.camera class="h-4 w-4"/>
+                Ganti Foto
+            </button>
+        </div>
+
+        <div class="sm:ml-auto text-center sm:text-right">
+            <div class="flex items-center justify-center gap-2 sm:justify-end">
+                <h2 class="text-lg font-bold text-foreground">
+                    {{ $user->name }}
+                </h2>
+
+                <span class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    {{ ucfirst($role) }}
+                </span>
+            </div>
+
+            <p class="text-sm text-muted-foreground">
+                {{ $user->schoolClass->name ?? '-' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="my-6 border-t border-border"></div>
+
+    <form method="POST"
+          action="{{ route('profile.update') }}"
+          class="grid gap-5 sm:grid-cols-2">
+
         @csrf
-    </form>
-
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
-        @csrf
-        @method('patch')
+        @method('PATCH')
 
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            <label class="mb-1.5 block text-sm font-medium text-foreground">
+                Nama Lengkap
+            </label>
+
+            <x-text-input
+                id="name"
+                name="name"
+                type="text"
+                class="block w-full rounded-xl border-border bg-background"
+                :value="old('name',$user->name)"
+                required
+            />
+
+            <x-input-error
+                :messages="$errors->get('name')"
+                class="mt-2"
+            />
         </div>
 
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+            <label class="mb-1.5 block text-sm font-medium text-foreground">
+                Email
+            </label>
+
+            <x-text-input
+                id="email"
+                name="email"
+                type="email"
+                class="block w-full rounded-xl border-border bg-background"
+                :value="old('email',$user->email)"
+                required
+            />
+
+            <x-input-error
+                :messages="$errors->get('email')"
+                class="mt-2"
+            />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        {{ __('Your email address is unverified.') }}
 
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
-                    </p>
+                <p class="mt-2 text-xs text-warning">
+                    Email belum diverifikasi.
 
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            {{ __('A new verification link has been sent to your email address.') }}
-                        </p>
-                    @endif
-                </div>
+                    <button
+                        form="send-verification"
+                        class="font-semibold underline"
+                    >
+                        Kirim ulang
+                    </button>
+                </p>
+
             @endif
         </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+        <div>
+            <label class="mb-1.5 block text-sm font-medium text-foreground">
+                Role
+            </label>
 
-            @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
+            <input
+                type="text"
+                value="{{ ucfirst($role) }}"
+                disabled
+                class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+            >
+        </div>
+
+        <div>
+            <label class="mb-1.5 block text-sm font-medium text-foreground">
+                Kelas
+            </label>
+
+            <input
+                type="text"
+                value="{{ $user->schoolClass->name ?? '-' }}"
+                disabled
+                class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+            >
+        </div>
+
+        <div class="sm:col-span-2 flex items-center gap-4 pt-2">
+
+            <button
+                type="submit"
+                class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+            >
+                Simpan Perubahan
+            </button>
+
+            @if(session('status')==='profile-updated')
+                <span
+                    x-data="{show:true}"
                     x-show="show"
                     x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
+                    x-init="setTimeout(()=>show=false,2000)"
+                    class="text-sm font-medium text-success"
+                >
+                    Berhasil disimpan.
+                </span>
             @endif
+
         </div>
+
     </form>
+
 </section>
+
+<form id="send-verification"
+      method="POST"
+      action="{{ route('verification.send') }}">
+    @csrf
+</form>

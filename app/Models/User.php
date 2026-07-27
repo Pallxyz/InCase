@@ -16,6 +16,11 @@ use Illuminate\Notifications\Notifiable;
     'password',
     'role',
     'class_id',
+    'phone',
+    'school_name',
+    'student_id',
+    'class_changed_at',
+    'avatar',
 ])]
 #[Hidden([
     'password',
@@ -37,6 +42,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'class_id' => 'integer',
+            'class_changed_at' => 'datetime',
         ];
     }
 

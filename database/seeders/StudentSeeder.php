@@ -19,6 +19,9 @@ class StudentSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'student',
             'class_id' => $class?->id,
+            'phone' => '081234567890',
+            'student_id' => '20260001',
+            'school_name' => 'SMKN 1 Cirebon',
         ]);
     }
 }
