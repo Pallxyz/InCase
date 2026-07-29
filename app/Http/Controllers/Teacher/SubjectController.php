@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
-use App\Models\Item;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
@@ -25,10 +24,10 @@ class SubjectController extends Controller
         $user = User::findOrFail(Auth::id());
 
         $subjects = Subject::with([
-                'teacher',
-                'schoolClass',
-                'items',
-            ])
+            'teacher',
+            'schoolClass',
+            'requiredItems',
+        ])
             ->where('teacher_id', $user->id)
             ->where('is_active', true)
             ->orderByRaw("
@@ -44,16 +43,18 @@ class SubjectController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        $classes = SchoolClass::orderBy('grade')
+        $school = \App\Models\School::where('name', $user->school_name)->first();
+        $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        $classes = SchoolClass::where('school_name', $user->school_name)
+            ->orderBy('grade')
             ->orderBy('major')
             ->get();
-
-        $items = Item::orderBy('name')->get();
 
         return view('schedules.index', compact(
             'subjects',
             'classes',
-            'items'
+            'schoolDayNames'
         ));
     }
 
@@ -75,15 +76,13 @@ class SubjectController extends Controller
         /** @var User $user */
         $user = User::findOrFail(Auth::id());
 
-        $data = $request->validated();
+        $data = $request->safe()->except('required_items');
 
         $data['teacher_id'] = $user->id;
 
         $subject = Subject::create($data);
 
-        $subject->items()->sync(
-            $request->input('items', [])
-        );
+        $this->syncRequiredItems($subject, $request->input('required_items'));
 
         return redirect()
             ->route('subjects.index')
@@ -103,7 +102,7 @@ class SubjectController extends Controller
             $subject->load([
                 'teacher',
                 'schoolClass',
-                'items',
+                'requiredItems',
             ])
         );
     }
@@ -120,7 +119,7 @@ class SubjectController extends Controller
         return response()->json(
             $subject->load([
                 'schoolClass',
-                'items',
+                'requiredItems',
             ])
         );
     }
@@ -136,12 +135,10 @@ class SubjectController extends Controller
         $this->authorizeTeacher($subject);
 
         $subject->update(
-            $request->validated()
+            $request->safe()->except('required_items')
         );
 
-        $subject->items()->sync(
-            $request->input('items', [])
-        );
+        $this->syncRequiredItems($subject, $request->input('required_items'));
 
         return redirect()
             ->route('subjects.index')
@@ -162,6 +159,27 @@ class SubjectController extends Controller
         return redirect()
             ->route('subjects.index')
             ->with('success', 'Schedule deleted successfully.');
+    }
+
+    /**
+     * Replace required items from a comma-separated string.
+     */
+    private function syncRequiredItems(Subject $subject, ?string $rawInput): void
+    {
+        $subject->requiredItems()->delete();
+
+        if (blank($rawInput)) {
+            return;
+        }
+
+        $names = collect(explode(',', $rawInput))
+            ->map(fn(string $name) => trim($name))
+            ->filter()
+            ->unique();
+
+        foreach ($names as $name) {
+            $subject->requiredItems()->create(['name' => $name]);
+        }
     }
 
     /**

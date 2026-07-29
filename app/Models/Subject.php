@@ -32,21 +32,16 @@ class Subject extends Model
         );
     }
 
-    public function items()
+    public function requiredItems()
     {
-        return $this->belongsToMany(
-            Item::class,
-            'subject_items'
-        );
+        return $this->hasMany(SubjectRequiredItem::class);
     }
+
     protected function casts(): array
     {
         return [
-
             'has_exam' => 'boolean',
-
             'is_active' => 'boolean',
-
         ];
     }
 }

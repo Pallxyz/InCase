@@ -7,8 +7,8 @@
 @php
     $isToday = $variant === 'today';
     $maxVisibleItems = 4;
-    $visibleItems = $subject->items->take($maxVisibleItems);
-    $remainingItemsCount = max(0, $subject->items->count() - $maxVisibleItems);
+    $visibleItems = $subject->requiredItems->take($maxVisibleItems);
+    $remainingItemsCount = max(0, $subject->requiredItems->count() - $maxVisibleItems);
 @endphp
 
 <div {{ $attributes->merge(['class' => 'group relative rounded-[24px] border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md']) }}>
@@ -51,7 +51,7 @@
         </div>
     @endif
 
-    @if ($subject->items->isNotEmpty())
+    @if ($subject->requiredItems->isNotEmpty())
         <div class="mt-3 flex flex-wrap gap-1.5">
             @foreach ($visibleItems as $item)
                 <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground">
@@ -62,7 +62,7 @@
             @if ($remainingItemsCount > 0)
                 <span
                     class="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
-                    title="{{ $subject->items->skip($maxVisibleItems)->pluck('name')->implode(', ') }}"
+                    title="{{ $subject->requiredItems->skip($maxVisibleItems)->pluck('name')->implode(', ') }}"
                 >
                     +{{ $remainingItemsCount }} lainnya
                 </span>

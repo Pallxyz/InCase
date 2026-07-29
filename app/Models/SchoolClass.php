@@ -9,12 +9,10 @@ use Illuminate\Database\Eloquent\Model;
     'name',
     'major',
     'grade',
+    'school_name',
 ])]
 class SchoolClass extends Model
 {
-    /**
-     * Students in this class.
-     */
     public function students()
     {
         return $this->hasMany(
@@ -23,9 +21,6 @@ class SchoolClass extends Model
         );
     }
 
-    /**
-     * Subjects assigned to this class.
-     */
     public function subjects()
     {
         return $this->hasMany(

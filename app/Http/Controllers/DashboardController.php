@@ -16,7 +16,6 @@ class DashboardController extends Controller
     public function index(): View
     {
         $user = Auth::user();
-
         $today = now()->englishDayOfWeek;
 
         /*
@@ -24,13 +23,11 @@ class DashboardController extends Controller
         | STUDENT DASHBOARD
         |--------------------------------------------------------------------------
         */
-
         if ($user->role === 'student') {
-
             $todaySubjects = Subject::with([
                     'teacher',
                     'schoolClass',
-                    'items',
+                    'requiredItems',
                 ])
                 ->where('class_id', $user->class_id)
                 ->where('day', $today)
@@ -53,7 +50,6 @@ class DashboardController extends Controller
                 ->unique();
 
             $packedCount = $packedItemIds->count();
-
             $totalItems = $items->count();
 
             $progress = $totalItems > 0
@@ -61,27 +57,17 @@ class DashboardController extends Controller
                 : 0;
 
             return view('dashboard.index', [
-
                 'role' => 'student',
-
                 'user' => $user,
-
                 'todaySubjects' => $todaySubjects,
-
                 'items' => $items,
-
                 'todayScans' => $todayScans,
-
                 'packedCount' => $packedCount,
-
                 'totalItems' => $totalItems,
-
                 'progress' => $progress,
-
                 // Teacher only
                 'subjectCount' => 0,
                 'studentCount' => 0,
-
             ]);
         }
 
@@ -90,10 +76,9 @@ class DashboardController extends Controller
         | TEACHER DASHBOARD
         |--------------------------------------------------------------------------
         */
-
         $todaySubjects = Subject::with([
                 'schoolClass',
-                'items',
+                'requiredItems',
             ])
             ->where('teacher_id', $user->id)
             ->where('day', $today)
@@ -111,32 +96,23 @@ class DashboardController extends Controller
             ->filter()
             ->unique()
             ->pipe(function ($classes) {
-
                 return \App\Models\User::where('role', 'student')
                     ->whereIn('class_id', $classes)
                     ->count();
-
             });
 
         return view('dashboard.index', [
-
             'role' => 'teacher',
-
             'user' => $user,
-
             'todaySubjects' => $todaySubjects,
-
             'subjectCount' => $subjectCount,
-
             'studentCount' => $studentCount,
-
             // Student only
             'items' => collect(),
             'todayScans' => collect(),
             'packedCount' => 0,
             'totalItems' => 0,
             'progress' => 0,
-
         ]);
     }
 }

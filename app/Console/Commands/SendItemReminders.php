@@ -7,6 +7,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Notifications\ItemReminderNotification;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 class SendItemReminders extends Command
 {
@@ -18,7 +19,7 @@ class SendItemReminders extends Command
         $now = now();
         $windowEnd = $now->copy()->addMinutes(30)->format('H:i');
 
-        $subjects = Subject::with('items')
+        $subjects = Subject::with('requiredItems')
             ->where('day', $now->englishDayOfWeek)
             ->where('is_active', true)
             ->whereTime('start_time', '>=', $now->format('H:i'))
@@ -26,9 +27,9 @@ class SendItemReminders extends Command
             ->get();
 
         foreach ($subjects as $subject) {
-            $requiredItems = $subject->items;
+            $requiredNames = $subject->requiredItems->pluck('name');
 
-            if ($requiredItems->isEmpty()) {
+            if ($requiredNames->isEmpty()) {
                 continue;
             }
 
@@ -37,20 +38,33 @@ class SendItemReminders extends Command
                 ->get();
 
             foreach ($students as $student) {
-                $scannedItemIds = ScanLog::where('user_id', $student->id)
-                    ->where('status', 'success')
-                    ->whereDate('scanned_at', today())
-                    ->pluck('item_id');
-
-                $missing = $requiredItems->whereNotIn('id', $scannedItemIds);
+                $missing = $this->missingItemsForStudent($student->id, $requiredNames);
 
                 if ($missing->isNotEmpty()) {
                     $student->notify(new ItemReminderNotification(
                         $subject,
-                        $missing->pluck('name')
+                        $missing
                     ));
                 }
             }
         }
+    }
+
+    /**
+     * Match required item names against the student's own scanned items today
+     * (case-insensitive, per-student — not by global item ID).
+     */
+    private function missingItemsForStudent(int $studentId, \Illuminate\Support\Collection $requiredNames): \Illuminate\Support\Collection
+    {
+        $scannedNamesToday = ScanLog::where('scan_logs.user_id', $studentId)
+            ->where('scan_logs.status', 'success')
+            ->whereDate('scan_logs.scanned_at', today())
+            ->join('items', 'items.id', '=', 'scan_logs.item_id')
+            ->pluck('items.name')
+            ->map(fn (string $name) => Str::lower(trim($name)));
+
+        return $requiredNames->filter(
+            fn (string $required) => ! $scannedNamesToday->contains(Str::lower(trim($required)))
+        )->values();
     }
 }

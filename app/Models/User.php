@@ -46,10 +46,15 @@ class User extends Authenticatable
             'class_changed_at' => 'datetime',
         ];
     }
-
+    
+    public function school()
+    {
+        return School::where('name', $this->school_name)->first();
+    }
     /**
      * Class (Student only)
      */
+
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
