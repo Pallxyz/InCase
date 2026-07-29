@@ -39,6 +39,7 @@ class SubjectSeeder extends Seeder
                 'homework' => 'Kerjakan latihan halaman 42',
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => ['Buku Paket Matematika', 'Buku Tulis Matematika', 'Kalkulator'],
             ],
 
             [
@@ -67,6 +68,7 @@ class SubjectSeeder extends Seeder
                 'homework' => 'Buat desain poster',
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => ['Laptop', 'Charger Laptop'],
             ],
 
             /*
@@ -203,6 +205,7 @@ class SubjectSeeder extends Seeder
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => ['Baju Olahraga', 'Sepatu Olahraga'],
             ],
 
             [
@@ -222,7 +225,14 @@ class SubjectSeeder extends Seeder
         ];
 
         foreach ($subjects as $subject) {
-            Subject::create($subject);
+            $requiredItems = $subject['required_items'] ?? [];
+            unset($subject['required_items']);
+
+            $created = Subject::create($subject);
+
+            foreach ($requiredItems as $itemName) {
+                $created->requiredItems()->create(['name' => $itemName]);
+            }
         }
     }
 }

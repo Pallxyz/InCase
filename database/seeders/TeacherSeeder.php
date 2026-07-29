@@ -13,7 +13,7 @@ class TeacherSeeder extends Seeder
         User::updateOrCreate(
             [
                 'email' => 'arya.milito@incase.test',
-            ],y
+            ],
             [
                 'name' => 'Arya Milito',
                 'password' => Hash::make('password'),

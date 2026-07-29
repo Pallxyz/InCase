@@ -168,7 +168,7 @@
             return [
                 'id' => $c->id,
                 'grade' => $c->grade,
-                'label' => $c->grade . ' ' . $c->major,
+                'label' => $c->name,
             ];
         });
     @endphp

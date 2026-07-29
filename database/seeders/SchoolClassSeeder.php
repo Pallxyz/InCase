@@ -101,8 +101,12 @@ class SchoolClassSeeder extends Seeder
             ['name' => 'XII RPL 2', 'major' => 'PPLG', 'grade' => 'XII'],
         ];
 
+        $schoolName = 'SMKN 1 Cirebon';
+
         foreach ($classes as $class) {
-            SchoolClass::create($class);
+            SchoolClass::create(array_merge($class, [
+                'school_name' => $schoolName,
+            ]));
         }
     }
 }
