@@ -506,7 +506,7 @@ if ($greetingHour < 11) {
                                             <option value="" disabled selected>Pilih kelas</option>
                                             @foreach ($classes as $class)
                                             <option value="{{ $class->id }}" @selected((string) old('class_id')===(string) $class->id)>
-                                                {{ $class->grade }} {{ $class->major }}
+                                                {{ $class->name }}
                                             </option>
                                             @endforeach
                                         </select>
@@ -708,7 +708,7 @@ if ($greetingHour < 11) {
                             <select name="class_id" id="edit-class_id" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                                 <option value="" disabled>Pilih kelas</option>
                                 @foreach ($classes as $class)
-                                <option value="{{ $class->id }}">{{ $class->grade }} {{ $class->major }}</option>
+                                <option value="{{ $class->id }}">{{ $class->name }}</option>
                                 @endforeach
                             </select>
                         </div>
