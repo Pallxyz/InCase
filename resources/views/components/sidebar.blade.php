@@ -11,7 +11,6 @@
     ];
 
     if ($user->role === 'student') {
-
         $navItems[] = [
             'icon' => 'cube',
             'label' => 'Barang',
@@ -32,16 +31,13 @@
             'href' => route('scan-history.index'),
             'active' => request()->routeIs('scan-history.*'),
         ];
-
     } elseif ($user->role === 'teacher') {
-
         $navItems[] = [
             'icon' => 'calendar-days',
             'label' => 'Jadwal',
             'href' => route('subjects.index'),
             'active' => request()->routeIs('subjects.*'),
         ];
-
     }
 
     $navItems[] = [
@@ -70,7 +66,9 @@
                     <a href="{{ $item['href'] }}" @class([
                         'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                         'bg-primary/10 text-primary' => $item['active'],
-                        'text-muted-foreground hover:bg-muted hover:text-foreground' => ! $item['active'],
+                        'text-muted-foreground hover:bg-muted hover:text-foreground' => !$item[
+                            'active'
+                        ],
                     ])>
                         <x-dynamic-component :component="'icon.' . $item['icon']" class="h-5 w-5" />
                         {{ $item['label'] }}
@@ -80,8 +78,14 @@
         </div>
 
         <div class="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            <span
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground overflow-hidden">
+                @if ($user->avatar)
+                    <img src="{{ Storage::url($user->avatar) }}" alt="{{ $user->name }}"
+                        class="h-full w-full object-cover">
+                @else
+                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                @endif
             </span>
 
             <div class="min-w-0 flex-1">
@@ -97,8 +101,7 @@
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
 
-                <button
-                    type="submit"
+                <button type="submit"
                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
                     aria-label="Keluar">
 
