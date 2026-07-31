@@ -1,215 +1,128 @@
 @php
-$allDayLabels = [
-'Monday' => 'Senin',
-'Tuesday' => 'Selasa',
-'Wednesday' => 'Rabu',
-'Thursday' => 'Kamis',
-'Friday' => 'Jumat',
-'Saturday' => 'Sabtu',
-];
+    $allDayLabels = [
+        'Monday' => 'Senin',
+        'Tuesday' => 'Selasa',
+        'Wednesday' => 'Rabu',
+        'Thursday' => 'Kamis',
+        'Friday' => 'Jumat',
+        'Saturday' => 'Sabtu',
+    ];
 
-$dayLabels = collect($allDayLabels)
-->only($schoolDayNames ?? array_keys($allDayLabels))
-->all();
+    $dayLabels = collect($allDayLabels)
+        ->only($schoolDayNames ?? array_keys($allDayLabels))
+        ->all();
 
-$englishDayNames = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
-$todayDay = $englishDayNames[now()->dayOfWeekIso] ?? 'Monday';
+    $englishDayNames = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
+    $todayDay = $englishDayNames[now()->dayOfWeekIso] ?? 'Monday';
 
-$todaySubjects = $subjects->where('day', $todayDay)->values();
+    $todaySubjects = $subjects->where('day', $todayDay)->values();
 
-$dayCounts = $subjects->groupBy('day')->map->count();
+    $dayCounts = $subjects->groupBy('day')->map->count();
 
-$isTeacher = auth()->check() && (auth()->user()->role ?? null) === 'teacher';
-$isStudent = auth()->check() && (auth()->user()->role ?? null) === 'student';
-$canAddSchedule = $isTeacher || $isStudent;
+    $isTeacher = auth()->check() && (auth()->user()->role ?? null) === 'teacher';
+    $isStudent = auth()->check() && (auth()->user()->role ?? null) === 'student';
+    $canAddSchedule = $isTeacher || $isStudent;
 
-// ============ ADDITIONAL PRESENTATIONAL-ONLY COMPUTATIONS ============
-// Nothing here touches the database, routes, or controllers — these are
-// purely derived from the collections that already exist above, so the
-// underlying logic / data-flow of the page is unchanged.
-$totalJadwal = $subjects->count();
-$totalMataPelajaran = $subjects->pluck('name')->unique()->count();
-$jadwalMingguIni = $subjects->count();
-$jadwalHariIniCount = $todaySubjects->count();
+    $totalJadwal = $subjects->count();
+    $totalMataPelajaran = $subjects->pluck('name')->unique()->count();
+    $jadwalMingguIni = $subjects->count();
+    $jadwalHariIniCount = $todaySubjects->count();
 
-$currentTimeString = now()->format('H:i:s');
-$nextUpcomingSubject = $todaySubjects->first(function ($s) use ($currentTimeString) {
-return (string) $s->start_time >= $currentTimeString;
-});
+    $currentTimeString = now()->format('H:i:s');
+    $nextUpcomingSubject = $todaySubjects->first(function ($s) use ($currentTimeString) {
+        return (string) $s->start_time >= $currentTimeString;
+    });
 
-$greetingHour = now()->hour;
-if ($greetingHour < 11) {
-    $greetingText='Selamat pagi' ;
+    $greetingHour = now()->hour;
+    if ($greetingHour < 11) {
+        $greetingText = 'Selamat pagi';
     } elseif ($greetingHour < 15) {
-    $greetingText='Selamat siang' ;
+        $greetingText = 'Selamat siang';
     } elseif ($greetingHour < 19) {
-    $greetingText='Selamat sore' ;
+        $greetingText = 'Selamat sore';
     } else {
-    $greetingText='Selamat malam' ;
+        $greetingText = 'Selamat malam';
     }
-    $greetingName=auth()->user()->name ?? null;
+    $greetingName = auth()->user()->name ?? null;
 
     $classesJson = $classes->map(fn ($class) => [
-    'id' => $class->id,
-    'grade' => $class->grade,
-    'major' => $class->major,
+        'id' => $class->id,
+        'grade' => $class->grade,
+        'major' => $class->major,
     ])->values();
+@endphp
 
-    @endphp
+<x-layouts.dashboard title="Jadwal — InCase">
+    <style>
+        @keyframes schedule-fade-in-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes schedule-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes schedule-toast-in {
+            from { opacity: 0; transform: translate(-50%, -12px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes schedule-fab-pop {
+            from { opacity: 0; transform: scale(0.6); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes schedule-shimmer {
+            0% { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        @keyframes schedule-ripple {
+            to { transform: scale(3); opacity: 0; }
+        }
+        .schedule-card-enter { animation: schedule-fade-in-up 0.35s ease-out both; }
+        .schedule-fade-in { animation: schedule-fade-in 0.4s ease-out both; }
+        .schedule-toast-enter { animation: schedule-toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .schedule-fab-enter { animation: schedule-fab-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .schedule-skeleton {
+            background: linear-gradient(90deg, rgba(148,163,184,0.12) 25%, rgba(148,163,184,0.24) 37%, rgba(148,163,184,0.12) 63%);
+            background-size: 400px 100%;
+            animation: schedule-shimmer 1.4s ease-in-out infinite;
+        }
+        .schedule-ripple-btn { position: relative; overflow: hidden; }
+        .schedule-ripple-span {
+            position: absolute;
+            border-radius: 9999px;
+            background: rgba(255,255,255,0.55);
+            transform: scale(0);
+            pointer-events: none;
+            animation: schedule-ripple 0.6s ease-out;
+        }
+        .schedule-stat-card:hover { transform: translateY(-3px); }
+        .schedule-subject-wrap { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .schedule-subject-wrap:hover { transform: translateY(-3px); }
+        .schedule-day-tab-track { scrollbar-width: none; }
+        .schedule-day-tab-track::-webkit-scrollbar { display: none; }
+        html { scroll-behavior: smooth; }
+        @media (prefers-reduced-motion: reduce) {
+            .schedule-card-enter,
+            .schedule-fade-in,
+            .schedule-toast-enter,
+            .schedule-fab-enter,
+            .schedule-skeleton { animation: none; }
+            .schedule-stat-card:hover,
+            .schedule-subject-wrap:hover { transform: none; }
+        }
+    </style>
 
-    <x-layouts.dashboard title="Jadwal — InCase">
-        <style>
-            @keyframes schedule-fade-in-up {
-                from {
-                    opacity: 0;
-                    transform: translateY(8px);
-                }
+    <div class="flex h-screen bg-slate-50">
+        <x-sidebar />
 
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
+        <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64">
+            <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
 
-            @keyframes schedule-fade-in {
-                from {
-                    opacity: 0;
-                }
-
-                to {
-                    opacity: 1;
-                }
-            }
-
-            @keyframes schedule-toast-in {
-                from {
-                    opacity: 0;
-                    transform: translate(-50%, -12px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translate(-50%, 0);
-                }
-            }
-
-            @keyframes schedule-fab-pop {
-                from {
-                    opacity: 0;
-                    transform: scale(0.6);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: scale(1);
-                }
-            }
-
-            @keyframes schedule-shimmer {
-                0% {
-                    background-position: -400px 0;
-                }
-
-                100% {
-                    background-position: 400px 0;
-                }
-            }
-
-            @keyframes schedule-ripple {
-                to {
-                    transform: scale(3);
-                    opacity: 0;
-                }
-            }
-
-            .schedule-card-enter {
-                animation: schedule-fade-in-up 0.35s ease-out both;
-            }
-
-            .schedule-fade-in {
-                animation: schedule-fade-in 0.4s ease-out both;
-            }
-
-            .schedule-toast-enter {
-                animation: schedule-toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-            }
-
-            .schedule-fab-enter {
-                animation: schedule-fab-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-            }
-
-            .schedule-skeleton {
-                background: linear-gradient(90deg, rgba(148, 163, 184, 0.12) 25%, rgba(148, 163, 184, 0.24) 37%, rgba(148, 163, 184, 0.12) 63%);
-                background-size: 400px 100%;
-                animation: schedule-shimmer 1.4s ease-in-out infinite;
-            }
-
-            .schedule-ripple-btn {
-                position: relative;
-                overflow: hidden;
-            }
-
-            .schedule-ripple-span {
-                position: absolute;
-                border-radius: 9999px;
-                background: rgba(255, 255, 255, 0.55);
-                transform: scale(0);
-                pointer-events: none;
-                animation: schedule-ripple 0.6s ease-out;
-            }
-
-            .schedule-stat-card:hover {
-                transform: translateY(-3px);
-            }
-
-            .schedule-subject-wrap {
-                transition: transform 0.25s ease, box-shadow 0.25s ease;
-            }
-
-            .schedule-subject-wrap:hover {
-                transform: translateY(-3px);
-            }
-
-            .schedule-day-tab-track {
-                scrollbar-width: none;
-            }
-
-            .schedule-day-tab-track::-webkit-scrollbar {
-                display: none;
-            }
-
-            html {
-                scroll-behavior: smooth;
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-
-                .schedule-card-enter,
-                .schedule-fade-in,
-                .schedule-toast-enter,
-                .schedule-fab-enter,
-                .schedule-skeleton {
-                    animation: none;
-                }
-
-                .schedule-stat-card:hover,
-                .schedule-subject-wrap:hover {
-                    transform: none;
-                }
-            }
-        </style>
-
-        <div class="flex h-screen bg-slate-50">
-            <x-sidebar />
-
-            <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64">
-                <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-
-                    {{-- ============ FLASH MESSAGE (TOAST) ============ --}}
-                    @if (session('success'))
+                @if (session('success'))
                     <div
                         id="schedule-toast"
-                        class="schedule-toast-enter fixed left-1/2 top-5 z-[60] flex w-[92%] max-w-sm -translate-x-1/2 items-center gap-3 rounded-2xl border border-emerald-100 bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_-8px_rgba(16,185,129,0.35)] backdrop-blur">
+                        class="schedule-toast-enter fixed left-1/2 top-5 z-[60] flex w-[92%] max-w-sm -translate-x-1/2 items-center gap-3 rounded-2xl border border-emerald-100 bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_-8px_rgba(16,185,129,0.35)] backdrop-blur"
+                    >
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                             <x-icon.check-circle class="h-4.5 w-4.5" />
                         </span>
@@ -219,237 +132,229 @@ if ($greetingHour < 11) {
                         </button>
                     </div>
                     <script>
-                        setTimeout(function() {
+                        setTimeout(function () {
                             var t = document.getElementById('schedule-toast');
                             if (t) {
                                 t.style.transition = 'opacity .3s ease, transform .3s ease';
                                 t.style.opacity = '0';
                                 t.style.transform = 'translate(-50%, -12px)';
-                                setTimeout(function() {
-                                    t.remove();
-                                }, 300);
+                                setTimeout(function () { t.remove(); }, 300);
                             }
                         }, 4000);
                     </script>
-                    @endif
+                @endif
 
-                    {{-- ============ HEADER ============ --}}
-                    <div class="relative overflow-hidden rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 px-6 py-8 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.55)] sm:px-9 sm:py-10">
-                        <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
-                        <div class="pointer-events-none absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl"></div>
+                <div class="relative overflow-hidden rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 px-5 py-7 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.55)] sm:px-9 sm:py-10">
+                    <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
+                    <div class="pointer-events-none absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl"></div>
 
-                        <div class="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-start gap-4">
-                                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-inner ring-1 ring-white/20 backdrop-blur">
-                                    <x-icon.calendar class="h-7 w-7" />
-                                </span>
-                                <div>
-                                    <p class="text-xs font-semibold uppercase tracking-wider text-white/70">
-                                        {{ $greetingText }}{{ $greetingName ? ', ' . $greetingName : '' }} 👋
-                                    </p>
-                                    <h1 class="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                                        Jadwal Pelajaran
-                                    </h1>
-                                    <p class="mt-1.5 max-w-md text-sm leading-relaxed text-white/75">
-                                        Pantau semua kelas, tenggat PR, dan barang wajib kamu dalam satu tampilan yang rapi.
-                                    </p>
-                                </div>
+                    <div class="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-inner ring-1 ring-white/20 backdrop-blur sm:h-14 sm:w-14">
+                                <x-icon.calendar class="h-5 w-5 sm:h-7 sm:w-7" />
+                            </span>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-wider text-white/70 sm:text-xs">
+                                    {{ $greetingText }}{{ $greetingName ? ', ' . $greetingName : '' }} 👋
+                                </p>
+                                <h1 class="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl lg:text-3xl">
+                                    Jadwal Pelajaran
+                                </h1>
+                                <p class="mt-1.5 max-w-md text-xs leading-relaxed text-white/75 sm:text-sm">
+                                    Pantau semua kelas, tenggat PR, dan barang wajib kamu dalam satu tampilan yang rapi.
+                                </p>
                             </div>
+                        </div>
 
-                            @if ($canAddSchedule)
+                        @if ($canAddSchedule)
                             <button
                                 type="button"
                                 onclick="openAddModal()"
-                                class="schedule-ripple-btn inline-flex items-center justify-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-lg shadow-blue-900/20 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.97]">
+                                class="schedule-ripple-btn inline-flex w-full items-center justify-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-lg shadow-blue-900/20 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.97] sm:w-auto"
+                            >
                                 <x-icon.plus class="h-4 w-4" />
                                 Tambah Jadwal
                             </button>
-                            @endif
-                        </div>
-
-                        {{-- ============ DASHBOARD SUMMARY (STAT CARDS) ============ --}}
-                        <div class="relative mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-                            <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-4 shadow-sm backdrop-blur transition-transform">
-                                <div class="flex items-center justify-between">
-                                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                                        <x-icon.book-open class="h-4.5 w-4.5" />
-                                    </span>
-                                </div>
-                                <p class="mt-3 text-2xl font-bold text-white">{{ $totalJadwal }}</p>
-                                <p class="text-xs font-medium text-white/70">Total Jadwal</p>
-                            </div>
-
-                            <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-4 shadow-sm backdrop-blur transition-transform" style="animation-delay: 60ms">
-                                <div class="flex items-center justify-between">
-                                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                                        <x-icon.clock class="h-4.5 w-4.5" />
-                                    </span>
-                                </div>
-                                <p class="mt-3 text-2xl font-bold text-white">{{ $jadwalHariIniCount }}</p>
-                                <p class="text-xs font-medium text-white/70">Jadwal Hari Ini</p>
-                            </div>
-
-                            <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-4 shadow-sm backdrop-blur transition-transform" style="animation-delay: 120ms">
-                                <div class="flex items-center justify-between">
-                                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                                        <x-icon.calendar class="h-4.5 w-4.5" />
-                                    </span>
-                                </div>
-                                <p class="mt-3 text-2xl font-bold text-white">{{ $jadwalMingguIni }}</p>
-                                <p class="text-xs font-medium text-white/70">Jadwal Minggu Ini</p>
-                            </div>
-
-                            <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-4 shadow-sm backdrop-blur transition-transform" style="animation-delay: 180ms">
-                                <div class="flex items-center justify-between">
-                                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                                        <x-icon.academic-cap class="h-4.5 w-4.5" />
-                                    </span>
-                                </div>
-                                <p class="mt-3 text-2xl font-bold text-white">{{ $totalMataPelajaran }}</p>
-                                <p class="text-xs font-medium text-white/70">Total Mata Pelajaran</p>
-                            </div>
-                        </div>
+                        @endif
                     </div>
 
-                    {{-- ============ TODAY'S CLASSES ============ --}}
-                    <div class="sticky top-0 z-10 -mx-4 mt-8 bg-slate-50/90 px-4 pb-1 pt-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                        <div class="flex items-center gap-2.5">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                                <x-icon.clock class="h-4 w-4" />
+                    <div class="relative mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:gap-4">
+                        <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-3.5 shadow-sm backdrop-blur transition-transform sm:p-4">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white sm:h-9 sm:w-9">
+                                <x-icon.book-open class="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                             </span>
-                            <h2 class="text-lg font-bold text-slate-900">
-                                Kelas Hari Ini
-                            </h2>
-                            <span class="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-500">
-                                {{ $dayLabels[$todayDay] ?? $todayDay }}
+                            <p class="mt-2.5 text-xl font-bold text-white sm:mt-3 sm:text-2xl">{{ $totalJadwal }}</p>
+                            <p class="text-[11px] font-medium text-white/70 sm:text-xs">Total Jadwal</p>
+                        </div>
+
+                        <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-3.5 shadow-sm backdrop-blur transition-transform sm:p-4" style="animation-delay: 60ms">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white sm:h-9 sm:w-9">
+                                <x-icon.clock class="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                             </span>
-                            @if ($todaySubjects->isNotEmpty())
+                            <p class="mt-2.5 text-xl font-bold text-white sm:mt-3 sm:text-2xl">{{ $jadwalHariIniCount }}</p>
+                            <p class="text-[11px] font-medium text-white/70 sm:text-xs">Jadwal Hari Ini</p>
+                        </div>
+
+                        <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-3.5 shadow-sm backdrop-blur transition-transform sm:p-4" style="animation-delay: 120ms">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white sm:h-9 sm:w-9">
+                                <x-icon.calendar class="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                            </span>
+                            <p class="mt-2.5 text-xl font-bold text-white sm:mt-3 sm:text-2xl">{{ $jadwalMingguIni }}</p>
+                            <p class="text-[11px] font-medium text-white/70 sm:text-xs">Jadwal Minggu Ini</p>
+                        </div>
+
+                        <div class="schedule-stat-card schedule-card-enter rounded-2xl border border-white/15 bg-white/10 p-3.5 shadow-sm backdrop-blur transition-transform sm:p-4" style="animation-delay: 180ms">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white sm:h-9 sm:w-9">
+                                <x-icon.academic-cap class="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                            </span>
+                            <p class="mt-2.5 text-xl font-bold text-white sm:mt-3 sm:text-2xl">{{ $totalMataPelajaran }}</p>
+                            <p class="text-[11px] font-medium text-white/70 sm:text-xs">Total Mapel</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sticky top-0 z-10 -mx-4 mt-6 bg-slate-50/90 px-4 pb-1 pt-2 backdrop-blur sm:mt-8 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 sm:h-8 sm:w-8">
+                            <x-icon.clock class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </span>
+                        <h2 class="text-base font-bold text-slate-900 sm:text-lg">
+                            Kelas Hari Ini
+                        </h2>
+                        <span class="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+                            {{ $dayLabels[$todayDay] ?? $todayDay }}
+                        </span>
+                        @if ($todaySubjects->isNotEmpty())
                             <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
                                 {{ $todaySubjects->count() }}
                             </span>
-                            @endif
-                        </div>
+                        @endif
+                    </div>
 
-                        @if ($nextUpcomingSubject)
-                        <p class="mt-1 pl-[42px] text-xs font-medium text-slate-500">
+                    @if ($nextUpcomingSubject)
+                        <p class="mt-1 pl-[38px] text-xs font-medium text-slate-500 sm:pl-[42px]">
                             Kelas berikutnya:
                             <span class="text-blue-600">{{ $nextUpcomingSubject->name }}</span>
                             pukul {{ \Illuminate\Support\Str::of((string) $nextUpcomingSubject->start_time)->substr(0, 5) }}
                         </p>
-                        @endif
-                    </div>
-
-                    <div class="mt-3">
-                        @if ($todaySubjects->isEmpty())
-                        <x-schedule.empty-state
-                            class="schedule-fade-in mt-1 rounded-3xl border border-dashed border-slate-200 bg-white/70 py-12 shadow-sm"
-                            title="Gak ada kelas hari ini"
-                            description="Nikmati harimu, atau cek jadwal hari lain di bawah." />
-                        @else
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            @foreach ($todaySubjects as $subject)
-                            @php
-                            $isPast = (string) $subject->end_time < $currentTimeString;
-                                @endphp
-                                <div class="schedule-subject-wrap schedule-card-enter rounded-2xl {{ $isPast ? 'opacity-60' : '' }}" style="animation-delay: {{ $loop->index * 40 }}ms">
-                                <x-schedule.subject-card
-                                    :subject="$subject"
-                                    :is-teacher="$isTeacher"
-                                    variant="today"
-                                    class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.18)]" />
-                        </div>
-                        @endforeach
-                    </div>
                     @endif
                 </div>
 
-                {{-- ============ WEEKLY SCHEDULE ============ --}}
-                <div class="mt-10">
-                    <div class="flex items-center gap-2.5">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                            <x-icon.calendar class="h-4 w-4" />
+                <div class="mt-3">
+                    @if ($todaySubjects->isEmpty())
+                        <x-schedule.empty-state
+                            class="schedule-fade-in mt-1 rounded-3xl border border-dashed border-slate-200 bg-white/70 py-10 shadow-sm sm:py-12"
+                            title="Gak ada kelas hari ini"
+                            description="Nikmati harimu, atau cek jadwal hari lain di bawah."
+                        />
+                    @else
+                        <div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                            @foreach ($todaySubjects as $subject)
+                                @php
+                                    $isPast = (string) $subject->end_time < $currentTimeString;
+                                @endphp
+                                <div class="schedule-subject-wrap schedule-card-enter rounded-2xl {{ $isPast ? 'opacity-60' : '' }}" style="animation-delay: {{ $loop->index * 40 }}ms">
+                                    <x-schedule.subject-card
+                                        :subject="$subject"
+                                        :is-teacher="$isTeacher"
+                                        variant="today"
+                                        class="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.18)] sm:p-5"
+                                    />
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <div class="mt-8 sm:mt-10">
+                    <div class="flex items-center gap-2 sm:gap-2.5">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 sm:h-8 sm:w-8">
+                            <x-icon.calendar class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </span>
-                        <h2 class="text-lg font-bold text-slate-900">Jadwal Mingguan</h2>
+                        <h2 class="text-base font-bold text-slate-900 sm:text-lg">Jadwal Mingguan</h2>
                     </div>
 
-                    <div class="schedule-day-tab-track sticky top-0 z-10 mt-4 flex gap-1.5 overflow-x-auto rounded-full border border-slate-200 bg-white p-1.5 shadow-sm">
+                    <div class="schedule-day-tab-track sticky top-0 z-10 mt-3 flex gap-1.5 overflow-x-auto rounded-full border border-slate-200 bg-white p-1.5 shadow-sm sm:mt-4">
                         @foreach ($dayLabels as $dayValue => $dayLabel)
-                        <button
-                            type="button"
-                            onclick="switchScheduleDay('{{ $dayValue }}', this)"
-                            data-day="{{ $dayValue }}"
-                            class="day-tab inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 {{ $dayValue === $todayDay ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-primary-foreground shadow-md shadow-blue-600/25' : 'border border-border bg-card text-muted-foreground hover:bg-slate-50 hover:text-foreground' }}">
-                            {{ $dayLabel }}
-                            @if (($dayCounts[$dayValue] ?? 0) > 0)
-                            <span class="text-[11px] font-medium opacity-70">
-                                {{ $dayCounts[$dayValue] }}
-                            </span>
-                            @endif
-                        </button>
+                            <button
+                                type="button"
+                                onclick="switchScheduleDay('{{ $dayValue }}', this)"
+                                data-day="{{ $dayValue }}"
+                                class="day-tab inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm {{ $dayValue === $todayDay ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-primary-foreground shadow-md shadow-blue-600/25' : 'border border-border bg-card text-muted-foreground hover:bg-slate-50 hover:text-foreground' }}"
+                            >
+                                {{ $dayLabel }}
+                                @if (($dayCounts[$dayValue] ?? 0) > 0)
+                                    <span class="text-[11px] font-medium opacity-70">
+                                        {{ $dayCounts[$dayValue] }}
+                                    </span>
+                                @endif
+                            </button>
                         @endforeach
                     </div>
 
                     @foreach ($dayLabels as $dayValue => $dayLabel)
-                    <div
-                        id="schedule-day-{{ $dayValue }}"
-                        class="schedule-day-panel mt-5 flex flex-col gap-4 {{ $dayValue === $todayDay ? '' : 'hidden' }}">
-                        @php
-                        $dayItems = $subjects->where('day', $dayValue)->values();
-                        @endphp
+                        <div
+                            id="schedule-day-{{ $dayValue }}"
+                            class="schedule-day-panel mt-4 flex flex-col gap-3 sm:mt-5 sm:gap-4 {{ $dayValue === $todayDay ? '' : 'hidden' }}"
+                        >
+                            @php
+                                $dayItems = $subjects->where('day', $dayValue)->values();
+                            @endphp
 
-                        @if ($dayItems->isEmpty())
-                        <x-schedule.empty-state
-                            class="schedule-fade-in rounded-3xl border border-dashed border-slate-200 bg-white/70 py-12 shadow-sm"
-                            title="Belum ada jadwal"
-                            :description="$canAddSchedule
+                            @if ($dayItems->isEmpty())
+                                <x-schedule.empty-state
+                                    class="schedule-fade-in rounded-3xl border border-dashed border-slate-200 bg-white/70 py-10 shadow-sm sm:py-12"
+                                    title="Belum ada jadwal"
+                                    :description="$canAddSchedule
                                         ? 'Tambahkan jadwal buat hari ' . $dayLabel . '.'
-                                        : 'Belum ada kelas yang dijadwalkan di hari ' . $dayLabel . '.'" />
-                        @else
-                        @foreach ($dayItems as $subject)
-                        <div class="schedule-subject-wrap schedule-card-enter rounded-2xl" style="animation-delay: {{ $loop->index * 40 }}ms">
-                            <x-schedule.subject-card
-                                :subject="$subject"
-                                :is-teacher="$isTeacher"
-                                variant="weekly"
-                                class="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.18)]" />
+                                        : 'Belum ada kelas yang dijadwalkan di hari ' . $dayLabel . '.'"
+                                />
+                            @else
+                                @foreach ($dayItems as $subject)
+                                    <div class="schedule-subject-wrap schedule-card-enter rounded-2xl" style="animation-delay: {{ $loop->index * 40 }}ms">
+                                        <x-schedule.subject-card
+                                            :subject="$subject"
+                                            :is-teacher="$isTeacher"
+                                            variant="weekly"
+                                            class="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.18)] sm:p-5"
+                                        />
+                                    </div>
+                                @endforeach
+                            @endif
                         </div>
-                        @endforeach
-                        @endif
-                    </div>
                     @endforeach
                 </div>
 
-                {{-- spacer so content doesn't hide behind the FAB on mobile --}}
                 @if ($canAddSchedule)
-                <div class="h-20 sm:h-4"></div>
+                    <div class="h-20 sm:h-4"></div>
                 @endif
-        </div>
+            </div>
         </main>
-        </div>
+    </div>
 
-        {{-- ============ FLOATING ACTION BUTTON ============ --}}
-        @if ($canAddSchedule)
+    @if ($canAddSchedule)
         <button
             type="button"
             onclick="openAddModal()"
             title="Tambah Jadwal"
-            class="schedule-ripple-btn schedule-fab-enter fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-[0_16px_32px_-8px_rgba(37,99,235,0.55)] transition-transform hover:-translate-y-0.5 active:scale-95 sm:hidden">
+            class="schedule-ripple-btn schedule-fab-enter fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-[0_16px_32px_-8px_rgba(37,99,235,0.55)] transition-transform hover:-translate-y-0.5 active:scale-95 sm:hidden"
+        >
             <x-icon.plus class="h-6 w-6" />
         </button>
-        @endif
+    @endif
 
-        {{-- ============ ADD SCHEDULE DRAWER (buat teacher & student) ============ --}}
-        @if ($canAddSchedule)
+    {{-- ============ ADD SCHEDULE DRAWER ============ --}}
+    @if ($canAddSchedule)
         <div id="add-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div onclick="closeModal('add-subject-modal')" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
 
             <div class="modal-panel drawer-panel fixed inset-y-0 right-0 z-10 flex h-full w-full max-w-md translate-x-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-out sm:rounded-l-[28px]">
-                <div class="flex shrink-0 items-center gap-3 border-b border-slate-100 px-6 py-5 sm:px-8">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                        <x-icon.plus class="h-5 w-5" />
+                <div class="flex shrink-0 items-center gap-3 border-b border-slate-100 px-5 py-4 sm:px-8 sm:py-5">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:h-10 sm:w-10">
+                        <x-icon.plus class="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                     </span>
                     <div class="flex-1">
-                        <h3 class="text-lg font-bold text-slate-900">Tambah Jadwal</h3>
+                        <h3 class="text-base font-bold text-slate-900 sm:text-lg">Tambah Jadwal</h3>
                         <p class="text-xs text-slate-400">Isi detail kelas baru kamu</p>
                     </div>
                     <button type="button" onclick="closeModal('add-subject-modal')" class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
@@ -461,19 +366,19 @@ if ($greetingHour < 11) {
                     @csrf
                     <input type="hidden" name="is_active" value="1">
 
-                    <div class="flex flex-1 flex-col gap-6 overflow-y-auto scrollbar-none px-6 py-6 sm:px-8">
+                    <div class="flex flex-1 flex-col gap-5 overflow-y-auto scrollbar-none px-5 py-5 sm:gap-6 sm:px-8 sm:py-6">
                         @if ($errors->any())
-                        <div class="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                            <x-icon.exclamation-triangle class="mt-0.5 h-4 w-4 shrink-0" />
-                            <div>
-                                <p class="font-semibold">Ada {{ $errors->count() }} kesalahan pada form:</p>
-                                <ul class="mt-1 list-disc space-y-0.5 pl-4">
-                                    @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
+                            <div class="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                <x-icon.exclamation-triangle class="mt-0.5 h-4 w-4 shrink-0" />
+                                <div>
+                                    <p class="font-semibold">Ada {{ $errors->count() }} kesalahan pada form:</p>
+                                    <ul class="mt-1 list-disc space-y-0.5 pl-4">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
                         @endif
 
                         <div>
@@ -489,10 +394,10 @@ if ($greetingHour < 11) {
                                         <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: Matematika" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground/70 transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('name') border-destructive @enderror">
                                     </div>
                                     @error('name')
-                                    <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
-                                        <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
-                                        {{ $message }}
-                                    </p>
+                                        <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                                            <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
+                                            {{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
 
@@ -505,14 +410,14 @@ if ($greetingHour < 11) {
                                         <select name="class_id" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                                             <option value="" disabled selected>Pilih kelas</option>
                                             @foreach ($classes as $class)
-                                            <option value="{{ $class->id }}" @selected((string) old('class_id')===(string) $class->id)>
-                                                {{ $class->name }}
-                                            </option>
+                                                <option value="{{ $class->id }}" @selected((string) old('class_id') === (string) $class->id)>
+                                                    {{ $class->name }}
+                                                </option>
                                             @endforeach
                                         </select>
                                     </div>
                                     @error('class_id')
-                                    <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                                     @enderror
                                 </div>
 
@@ -525,10 +430,10 @@ if ($greetingHour < 11) {
                                         <input type="text" name="location" value="{{ old('location') }}" placeholder="Contoh: A203" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground/70 transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('location') border-destructive @enderror">
                                     </div>
                                     @error('location')
-                                    <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
-                                        <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
-                                        {{ $message }}
-                                    </p>
+                                        <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                                            <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
+                                            {{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
                             </div>
@@ -546,15 +451,15 @@ if ($greetingHour < 11) {
                                         </span>
                                         <select name="day" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('day') border-destructive @enderror">
                                             @foreach ($dayLabels as $dayValue => $dayLabel)
-                                            <option value="{{ $dayValue }}" @selected(old('day')===$dayValue)>{{ $dayLabel }}</option>
+                                                <option value="{{ $dayValue }}" @selected(old('day') === $dayValue)>{{ $dayLabel }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     @error('day')
-                                    <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
-                                        <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
-                                        {{ $message }}
-                                    </p>
+                                        <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                                            <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
+                                            {{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
 
@@ -565,13 +470,13 @@ if ($greetingHour < 11) {
                                             <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
                                                 <x-icon.clock class="h-4 w-4" />
                                             </span>
-                                            <input type="time" name="start_time" value="{{ old('start_time') }}" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('start_time') border-destructive @enderror">
+                                            <input type="time" name="start_time" value="{{ old('start_time') }}" min="06:00" max="16:00" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('start_time') border-destructive @enderror">
                                         </div>
                                         @error('start_time')
-                                        <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
-                                            <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
-                                            {{ $message }}
-                                        </p>
+                                            <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                                                <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
+                                                {{ $message }}
+                                            </p>
                                         @enderror
                                     </div>
                                     <div>
@@ -580,16 +485,17 @@ if ($greetingHour < 11) {
                                             <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
                                                 <x-icon.clock class="h-4 w-4" />
                                             </span>
-                                            <input type="time" name="end_time" value="{{ old('end_time') }}" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('end_time') border-destructive @enderror">
+                                            <input type="time" name="end_time" value="{{ old('end_time') }}" min="06:00" max="16:00" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('end_time') border-destructive @enderror">
                                         </div>
                                         @error('end_time')
-                                        <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
-                                            <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
-                                            {{ $message }}
-                                        </p>
+                                            <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                                                <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
+                                                {{ $message }}
+                                            </p>
                                         @enderror
                                     </div>
                                 </div>
+                                <p class="text-xs text-muted-foreground">Jam pelajaran cuma boleh antara 06:00–16:00.</p>
                             </div>
                         </div>
 
@@ -601,10 +507,10 @@ if ($greetingHour < 11) {
                                     <label class="mb-1.5 block text-sm font-medium text-foreground">PR (opsional)</label>
                                     <textarea name="homework" rows="2" placeholder="Contoh: Kerjakan halaman 42" class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground/70 transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 @error('homework') border-destructive @enderror">{{ old('homework') }}</textarea>
                                     @error('homework')
-                                    <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
-                                        <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
-                                        {{ $message }}
-                                    </p>
+                                        <p class="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                                            <x-icon.exclamation-triangle class="h-3 w-3 shrink-0" />
+                                            {{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
 
@@ -622,12 +528,13 @@ if ($greetingHour < 11) {
                                 name="required_items"
                                 rows="2"
                                 placeholder="Contoh: Buku Paket Matematika, Kalkulator, Penggaris"
-                                class="w-full rounded-xl border border-border px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">{{ old('required_items') }}</textarea>
+                                class="w-full rounded-xl border border-border px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            >{{ old('required_items') }}</textarea>
                             <p class="mt-1.5 text-xs text-muted-foreground">Pisahkan dengan koma.</p>
                         </div>
                     </div>
 
-                    <div class="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:px-8">
+                    <div class="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:px-8 sm:py-5">
                         <button type="button" onclick="closeModal('add-subject-modal')" class="flex-1 rounded-full border border-border py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
                             Batal
                         </button>
@@ -638,20 +545,20 @@ if ($greetingHour < 11) {
                 </form>
             </div>
         </div>
-        @endif
+    @endif
 
-        {{-- ============ EDIT & DELETE MODALS (khusus teacher) ============ --}}
-        @if ($isTeacher)
-        <div id="edit-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    {{-- ============ EDIT & DELETE MODALS ============ --}}
+    @if ($isTeacher)
+        <div id="edit-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-3 sm:px-4">
             <div onclick="closeModal('edit-subject-modal')" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
 
-            <div class="modal-panel relative w-full max-w-lg scale-95 rounded-[28px] bg-white p-6 opacity-0 shadow-2xl transition-all duration-200 ease-out sm:p-8">
+            <div class="modal-panel relative max-h-[92vh] w-full max-w-lg scale-95 overflow-hidden rounded-[28px] bg-white p-5 opacity-0 shadow-2xl transition-all duration-200 ease-out sm:p-8">
                 <div class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                        <x-icon.pencil class="h-5 w-5" />
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 sm:h-10 sm:w-10">
+                        <x-icon.pencil class="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                     </span>
                     <div class="flex-1">
-                        <h3 class="flex items-center gap-2 text-lg font-bold text-foreground">
+                        <h3 class="flex items-center gap-2 text-base font-bold text-foreground sm:text-lg">
                             Edit Jadwal
                             <span id="edit-modal-loading" class="hidden h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
                         </h3>
@@ -667,23 +574,23 @@ if ($greetingHour < 11) {
                     <span>Gagal ambil data jadwal. Coba lagi.</span>
                 </div>
 
-                <form id="edit-subject-form" method="POST" action="" class="schedule-form mt-6 flex max-h-[70vh] flex-col gap-5 overflow-y-auto scrollbar-none pr-1 transition-opacity duration-150">
+                <form id="edit-subject-form" method="POST" action="" class="schedule-form mt-5 flex max-h-[65vh] flex-col gap-4 overflow-y-auto scrollbar-none pr-1 transition-opacity duration-150 sm:mt-6 sm:max-h-[70vh] sm:gap-5">
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="is_active" value="1">
 
                     @if ($errors->any())
-                    <div class="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                        <x-icon.exclamation-triangle class="mt-0.5 h-4 w-4 shrink-0" />
-                        <div>
-                            <p class="font-semibold">Ada {{ $errors->count() }} kesalahan pada form:</p>
-                            <ul class="mt-1 list-disc space-y-0.5 pl-4">
-                                @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
+                        <div class="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                            <x-icon.exclamation-triangle class="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                                <p class="font-semibold">Ada {{ $errors->count() }} kesalahan pada form:</p>
+                                <ul class="mt-1 list-disc space-y-0.5 pl-4">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
                         </div>
-                    </div>
                     @endif
 
                     <div>
@@ -695,7 +602,7 @@ if ($greetingHour < 11) {
                             <input type="text" name="name" id="edit-name" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                         </div>
                         @error('name')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -708,12 +615,12 @@ if ($greetingHour < 11) {
                             <select name="class_id" id="edit-class_id" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                                 <option value="" disabled>Pilih kelas</option>
                                 @foreach ($classes as $class)
-                                <option value="{{ $class->id }}">{{ $class->name }}</option>
+                                    <option value="{{ $class->id }}">{{ $class->name }}</option>
                                 @endforeach
                             </select>
                         </div>
                         @error('class_id')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -726,7 +633,7 @@ if ($greetingHour < 11) {
                             <input type="text" name="location" id="edit-location" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                         </div>
                         @error('location')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -738,26 +645,26 @@ if ($greetingHour < 11) {
                             </span>
                             <select name="day" id="edit-day" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                                 @foreach ($dayLabels as $dayValue => $dayLabel)
-                                <option value="{{ $dayValue }}">{{ $dayLabel }}</option>
+                                    <option value="{{ $dayValue }}">{{ $dayLabel }}</option>
                                 @endforeach
                             </select>
                         </div>
                         @error('day')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-foreground">Jam Mulai</label>
                             <div class="relative">
                                 <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
                                     <x-icon.clock class="h-4 w-4" />
                                 </span>
-                                <input type="time" name="start_time" id="edit-start_time" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                                <input type="time" name="start_time" id="edit-start_time" min="06:00" max="16:00" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                             </div>
                             @error('start_time')
-                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                             @enderror
                         </div>
                         <div>
@@ -766,19 +673,20 @@ if ($greetingHour < 11) {
                                 <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
                                     <x-icon.clock class="h-4 w-4" />
                                 </span>
-                                <input type="time" name="end_time" id="edit-end_time" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                                <input type="time" name="end_time" id="edit-end_time" min="06:00" max="16:00" class="block w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
                             </div>
                             @error('end_time')
-                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
+                    <p class="-mt-2 text-xs text-muted-foreground">Jam pelajaran cuma boleh antara 06:00–16:00.</p>
 
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-foreground">PR (opsional)</label>
                         <textarea name="homework" id="edit-homework" rows="2" class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"></textarea>
                         @error('homework')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -794,11 +702,12 @@ if ($greetingHour < 11) {
                             name="required_items"
                             rows="2"
                             placeholder="Contoh: Buku Paket Matematika, Kalkulator, Penggaris"
-                            class="w-full rounded-xl border border-border px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"></textarea>
+                            class="w-full rounded-xl border border-border px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        ></textarea>
                         <p class="mt-1.5 text-xs text-muted-foreground">Pisahkan dengan koma.</p>
                     </div>
 
-                    <div class="mt-2 flex items-center gap-3">
+                    <div class="sticky bottom-0 -mx-1 mt-1 flex items-center gap-3 bg-white px-1 pt-2">
                         <button type="button" onclick="closeModal('edit-subject-modal')" class="flex-1 rounded-full border border-border py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
                             Batal
                         </button>
@@ -834,179 +743,183 @@ if ($greetingHour < 11) {
                 </form>
             </div>
         </div>
-        @endif
+    @endif
 
-        <script>
-            function switchScheduleDay(day, button) {
-                document.querySelectorAll('.schedule-day-panel').forEach(function(panel) {
-                    panel.classList.add('hidden');
-                });
-                document.getElementById('schedule-day-' + day).classList.remove('hidden');
-
-                document.querySelectorAll('.day-tab').forEach(function(tab) {
-                    tab.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'text-primary-foreground', 'shadow-md', 'shadow-blue-600/25');
-                    tab.classList.add('border', 'border-border', 'bg-card', 'text-muted-foreground');
-                });
-                button.classList.remove('border', 'border-border', 'bg-card', 'text-muted-foreground');
-                button.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'text-primary-foreground', 'shadow-md', 'shadow-blue-600/25');
-            }
-
-            function openModal(id) {
-                const modal = document.getElementById(id);
-                if (!modal) return;
-                const panel = modal.querySelector('.modal-panel');
-
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-
-                requestAnimationFrame(function() {
-                    if (!panel) return;
-                    if (panel.classList.contains('drawer-panel')) {
-                        panel.classList.remove('translate-x-full');
-                        panel.classList.add('translate-x-0');
-                    } else {
-                        panel.classList.remove('opacity-0', 'scale-95');
-                        panel.classList.add('opacity-100', 'scale-100');
-                    }
-                });
-            }
-
-            function closeModal(id) {
-                const modal = document.getElementById(id);
-                if (!modal) return;
-                const panel = modal.querySelector('.modal-panel');
-
-                if (panel) {
-                    if (panel.classList.contains('drawer-panel')) {
-                        panel.classList.remove('translate-x-0');
-                        panel.classList.add('translate-x-full');
-                    } else {
-                        panel.classList.remove('opacity-100', 'scale-100');
-                        panel.classList.add('opacity-0', 'scale-95');
-                    }
-                }
-
-                setTimeout(function() {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }, 300);
-            }
-
-            function openAddModal() {
-                openModal('add-subject-modal');
-            }
-
-            function openEditModal(button) {
-                const form = document.getElementById('edit-subject-form');
-                if (!form) return;
-
-                const id = button.dataset.id;
-                const loadingIndicator = document.getElementById('edit-modal-loading');
-                const errorBanner = document.getElementById('edit-modal-error');
-
-                errorBanner.classList.add('hidden');
-                errorBanner.classList.remove('flex');
-                form.classList.add('opacity-40', 'pointer-events-none');
-                loadingIndicator.classList.remove('hidden');
-
-                openModal('edit-subject-modal');
-
-                fetch('/subjects/' + id + '/edit')
-                    .then(function(response) {
-                        return response.json();
-                    })
-                    .then(function(subject) {
-                        document.getElementById('edit-name').value = subject.name ?? '';
-                        document.getElementById('edit-location').value = subject.location ?? '';
-                        document.getElementById('edit-day').value = subject.day ?? '';
-                        document.getElementById('edit-class_id').value = subject.class_id ?? '';
-                        document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
-                        document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);
-                        document.getElementById('edit-homework').value = subject.homework ?? '';
-                        document.getElementById('edit-has_exam').checked = !!subject.has_exam;
-
-                        document.getElementById('edit-required_items').value =
-                            (subject.requiredItems || []).map(function(item) {
-                                return item.name;
-                            }).join(', ');
-
-                        form.action = '/subjects/' + id;
-                    })
-                    .catch(function() {
-                        errorBanner.classList.remove('hidden');
-                        errorBanner.classList.add('flex');
-                    })
-                    .finally(function() {
-                        form.classList.remove('opacity-40', 'pointer-events-none');
-                        loadingIndicator.classList.add('hidden');
-                    });
-            }
-
-            function openDeleteModal(button) {
-                const form = document.getElementById('delete-subject-form');
-                if (!form) return;
-
-                document.getElementById('delete-subject-name').textContent =
-                    'Jadwal "' + button.dataset.name + '" akan dihapus permanen dan gak bisa dibatalin.';
-                form.action = '/subjects/' + button.dataset.id;
-                openModal('delete-subject-modal');
-            }
-
-            document.querySelectorAll('form.schedule-form').forEach(function(form) {
-                form.addEventListener('submit', function() {
-                    const btn = form.querySelector('.submit-btn');
-                    if (!btn || btn.disabled) return;
-
-                    btn.disabled = true;
-                    const label = btn.querySelector('.btn-label');
-                    if (label) {
-                        label.dataset.original = label.textContent;
-                        label.textContent = 'Memproses...';
-                    }
-                    btn.insertAdjacentHTML('afterbegin', '<span class="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"></span>');
-                });
+    <script>
+        function switchScheduleDay(day, button) {
+            document.querySelectorAll('.schedule-day-panel').forEach(function (panel) {
+                panel.classList.add('hidden');
             });
+            document.getElementById('schedule-day-' + day).classList.remove('hidden');
 
-            document.querySelectorAll('.schedule-ripple-btn').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    const rect = btn.getBoundingClientRect();
-                    const size = Math.max(rect.width, rect.height);
-                    const span = document.createElement('span');
-                    span.className = 'schedule-ripple-span';
-                    span.style.width = span.style.height = size + 'px';
-                    span.style.left = (e.clientX - rect.left - size / 2) + 'px';
-                    span.style.top = (e.clientY - rect.top - size / 2) + 'px';
-                    btn.appendChild(span);
-                    setTimeout(function() {
-                        span.remove();
-                    }, 600);
-                });
+            document.querySelectorAll('.day-tab').forEach(function (tab) {
+                tab.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'text-primary-foreground', 'shadow-md', 'shadow-blue-600/25');
+                tab.classList.add('border', 'border-border', 'bg-card', 'text-muted-foreground');
             });
+            button.classList.remove('border', 'border-border', 'bg-card', 'text-muted-foreground');
+            button.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'text-primary-foreground', 'shadow-md', 'shadow-blue-600/25');
+        }
 
-            (function() {
-                const addForm = document.getElementById('add-subject-form');
-                const editForm = document.getElementById('edit-subject-form');
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            const panel = modal.querySelector('.modal-panel');
 
-                if (addForm) {
-                    addForm.addEventListener('submit', function() {
-                        sessionStorage.setItem('schedule_form_context', JSON.stringify({
-                            type: 'add'
-                        }));
-                    });
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            requestAnimationFrame(function () {
+                if (!panel) return;
+                if (panel.classList.contains('drawer-panel')) {
+                    panel.classList.remove('translate-x-full');
+                    panel.classList.add('translate-x-0');
+                } else {
+                    panel.classList.remove('opacity-0', 'scale-95');
+                    panel.classList.add('opacity-100', 'scale-100');
+                }
+            });
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            const panel = modal.querySelector('.modal-panel');
+
+            if (panel) {
+                if (panel.classList.contains('drawer-panel')) {
+                    panel.classList.remove('translate-x-0');
+                    panel.classList.add('translate-x-full');
+                } else {
+                    panel.classList.remove('opacity-100', 'scale-100');
+                    panel.classList.add('opacity-0', 'scale-95');
+                }
+            }
+
+            setTimeout(function () {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function openAddModal() {
+            openModal('add-subject-modal');
+        }
+
+        function openEditModal(button) {
+            const form = document.getElementById('edit-subject-form');
+            if (!form) return;
+
+            const id = button.dataset.id;
+            const loadingIndicator = document.getElementById('edit-modal-loading');
+            const errorBanner = document.getElementById('edit-modal-error');
+
+            errorBanner.classList.add('hidden');
+            errorBanner.classList.remove('flex');
+            form.classList.add('opacity-40', 'pointer-events-none');
+            loadingIndicator.classList.remove('hidden');
+
+            openModal('edit-subject-modal');
+
+            fetch('/subjects/' + id + '/edit')
+                .then(function (response) { return response.json(); })
+                .then(function (subject) {
+                    document.getElementById('edit-name').value = subject.name ?? '';
+                    document.getElementById('edit-location').value = subject.location ?? '';
+                    document.getElementById('edit-day').value = subject.day ?? '';
+                    document.getElementById('edit-class_id').value = subject.class_id ?? '';
+                    document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
+                    document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);
+                    document.getElementById('edit-homework').value = subject.homework ?? '';
+                    document.getElementById('edit-has_exam').checked = !!subject.has_exam;
+
+                    document.getElementById('edit-required_items').value =
+                        (subject.requiredItems || []).map(function (item) { return item.name; }).join(', ');
+
+                    form.action = '/subjects/' + id;
+                })
+                .catch(function () {
+                    errorBanner.classList.remove('hidden');
+                    errorBanner.classList.add('flex');
+                })
+                .finally(function () {
+                    form.classList.remove('opacity-40', 'pointer-events-none');
+                    loadingIndicator.classList.add('hidden');
+                });
+        }
+
+        function openDeleteModal(button) {
+            const form = document.getElementById('delete-subject-form');
+            if (!form) return;
+
+            document.getElementById('delete-subject-name').textContent =
+                'Jadwal "' + button.dataset.name + '" akan dihapus permanen dan gak bisa dibatalin.';
+            form.action = '/subjects/' + button.dataset.id;
+            openModal('delete-subject-modal');
+        }
+
+        document.querySelectorAll('form.schedule-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                const startInput = form.querySelector('input[name="start_time"]');
+                const endInput = form.querySelector('input[name="end_time"]');
+
+                if (startInput && endInput && startInput.value && endInput.value) {
+                    const isOutOfRange = function (time) {
+                        return time < '06:00' || time > '16:00';
+                    };
+
+                    if (isOutOfRange(startInput.value) || isOutOfRange(endInput.value)) {
+                        e.preventDefault();
+                        alert('Jam pelajaran cuma boleh antara 06:00 sampai 16:00.');
+                        return;
+                    }
                 }
 
-                if (editForm) {
-                    editForm.addEventListener('submit', function() {
-                        const action = editForm.action || '';
-                        const id = action.substring(action.lastIndexOf('/') + 1);
-                        sessionStorage.setItem('schedule_form_context', JSON.stringify({
-                            type: 'edit',
-                            id: id
-                        }));
-                    });
-                }
+                const btn = form.querySelector('.submit-btn');
+                if (!btn || btn.disabled) return;
 
-               @if ($errors->any())
+                btn.disabled = true;
+                const label = btn.querySelector('.btn-label');
+                if (label) {
+                    label.dataset.original = label.textContent;
+                    label.textContent = 'Memproses...';
+                }
+                btn.insertAdjacentHTML('afterbegin', '<span class="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"></span>');
+            });
+        });
+
+        document.querySelectorAll('.schedule-ripple-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                const rect = btn.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const span = document.createElement('span');
+                span.className = 'schedule-ripple-span';
+                span.style.width = span.style.height = size + 'px';
+                span.style.left = (e.clientX - rect.left - size / 2) + 'px';
+                span.style.top = (e.clientY - rect.top - size / 2) + 'px';
+                btn.appendChild(span);
+                setTimeout(function () { span.remove(); }, 600);
+            });
+        });
+
+        (function () {
+            const addForm = document.getElementById('add-subject-form');
+            const editForm = document.getElementById('edit-subject-form');
+
+            if (addForm) {
+                addForm.addEventListener('submit', function () {
+                    sessionStorage.setItem('schedule_form_context', JSON.stringify({ type: 'add' }));
+                });
+            }
+
+            if (editForm) {
+                editForm.addEventListener('submit', function () {
+                    const action = editForm.action || '';
+                    const id = action.substring(action.lastIndexOf('/') + 1);
+                    sessionStorage.setItem('schedule_form_context', JSON.stringify({ type: 'edit', id: id }));
+                });
+            }
+
+            @if ($errors->any())
                 try {
                     const ctx = JSON.parse(sessionStorage.getItem('schedule_form_context') || 'null');
                     if (ctx && ctx.type === 'edit' && ctx.id && editForm) {
@@ -1020,12 +933,8 @@ if ($greetingHour < 11) {
                 } finally {
                     sessionStorage.removeItem('schedule_form_context');
                 }
-                @endif
-            })();
-        </script>
-        <script id="available-classes-json" type="application/json">
-            {
-                !! $classesJson->toJson() !!
-            }
-        </script>
-    </x-layouts.dashboard>
+            @endif
+        })();
+    </script>
+    <script id="available-classes-json" type="application/json">{!! $classesJson->toJson() !!}</script>
+</x-layouts.dashboard>
