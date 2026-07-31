@@ -90,7 +90,7 @@
                 </div>
 
                 {{-- Detected items --}}
-                <div class="mt-5 grid grid-cols-2 gap-3">
+                <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     @foreach ($detectedItems as $item)
                         <div class="flex items-center gap-2.5 rounded-xl border border-border bg-background px-3 py-2.5">
                             <x-dynamic-component :component="'icon.' . $item['icon']" class="h-4 w-4 shrink-0 text-primary" />
@@ -113,7 +113,7 @@
             </div>
 
             {{-- Floating phone notification --}}
-            <div class="absolute -bottom-6 -right-4 flex w-60 items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-xl">
+            <div class="absolute -bottom-6 -right-4 hidden w-60 items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-xl sm:flex">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <x-icon.bell class="h-4 w-4" />
                 </span>

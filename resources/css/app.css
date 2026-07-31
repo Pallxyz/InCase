@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+[x-cloak] {
+    display: none !important;
+}
+
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);

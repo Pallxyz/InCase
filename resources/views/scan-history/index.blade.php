@@ -160,6 +160,8 @@
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64 lg:mr-80">
+            <x-mobile-topbar title="Riwayat Pindai — InCase" />
+
             <div class="mx-auto max-w-4xl px-6 py-8 sm:px-8">
                 {{-- Header --}}
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

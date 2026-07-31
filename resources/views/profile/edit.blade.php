@@ -7,6 +7,8 @@
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:overflow-y-hidden lg:ml-64">
+            <x-mobile-topbar title="Profil — InCase" />
+
             <div class="mx-auto max-w-6xl px-6 py-8 sm:px-8">
                 {{-- Page Header --}}
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

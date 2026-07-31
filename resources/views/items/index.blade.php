@@ -36,6 +36,8 @@
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64">
+            <x-mobile-topbar title="Barang — InCase" />
+
             <div class="mx-auto max-w-6xl px-6 py-8 sm:px-8">
 
                 {{-- ============ FLASH MESSAGES ============ --}}

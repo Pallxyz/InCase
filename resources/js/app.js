@@ -1,5 +1,4 @@
 import './bootstrap';
-import './push';
 import Alpine from 'alpinejs';
 
 import TomSelect from "tom-select";
@@ -20,4 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.Alpine = Alpine;
+
+Alpine.store('sidebar', {
+    open: false,
+});
+
 Alpine.start();
