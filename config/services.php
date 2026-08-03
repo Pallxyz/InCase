@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'esp32' => [
+        'api_key' => env('ESP32_API_KEY'),
+    ],
+
 ];
