@@ -30,11 +30,13 @@ class MqttListen extends Command
             $this->info("Pesan masuk: {$rfidUid}");
 
             $result = $scanService->handle($rfidUid);
+            $body = $result['body'];
 
-            match ($result['body']['status']) {
-                'unknown' => $this->warn($result['body']['message']),
-                'missing' => $this->warn($result['body']['message']),
-                default => $this->info($result['body']['message']),
+            match ($body['status']) {
+                'unknown' => $this->error("❌ RFID {$rfidUid} tidak terdaftar di database."),
+                'missing' => $this->warn("⚠️  {$body['message']}"),
+                'complete' => $this->info("✅ {$body['message']}"),
+                default => $this->info("✅ {$body['message']}"),
             };
         }, 0);
 
