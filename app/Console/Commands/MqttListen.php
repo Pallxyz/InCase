@@ -36,23 +36,27 @@ class MqttListen extends Command
         $mqtt->loop(true);
     }
 
-    protected function processScan(string $rfidUid): void
-    {
-        $item = Item::where('rfid_uid', $rfidUid)->first();
+protected function processScan(string $rfidUid): void
+{
+    $item = Item::where('rfid_uid', $rfidUid)->first();
 
-        if (! $item) {
-            $this->warn("RFID {$rfidUid} tidak terdaftar.");
-            return;
-        }
+    if (! $item) {
+        $this->error("❌ RFID {$rfidUid} tidak terdaftar di database.");
+        return;
+    }
 
-        $student = $item->user;
+    $this->info("✅ {$item->name} berhasil discan!");
 
-        ScanLog::create([
-            'user_id' => $student->id,
-            'item_id' => $item->id,
-            'status' => 'success',
-            'scanned_at' => now(),
-        ]);
+    $student = $item->user;
+
+    ScanLog::create([
+        'user_id' => $student->id,
+        'item_id' => $item->id,
+        'status' => 'success',
+        'scanned_at' => now(),
+    ]);
+
+    // ... sisa kode di bawah ini TETAP SAMA (cek jadwal, barang kurang, dll)
 
         $now = now();
 
