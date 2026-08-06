@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ItemScanPollController;
 
 use App\Http\Controllers\Teacher\SubjectController;
 use App\Http\Controllers\HolidayController;
@@ -22,6 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/items/scan-poll', [ItemScanPollController::class, 'show'])->name('items.scan-poll');
+
     Route::middleware('role:student')->group(function () {
 
         Route::resource('items', ItemController::class);
@@ -34,13 +37,12 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:teacher')->group(function () {
-
         Route::resource('subjects', SubjectController::class);
-    });
 
-    Route::get('/holidays', [HolidayController::class, 'index'])->name('holidays.index');
-    Route::post('/holidays', [HolidayController::class, 'store'])->name('holidays.store');
-    Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
+        Route::get('/holidays', [HolidayController::class, 'index'])->name('holidays.index');
+        Route::post('/holidays', [HolidayController::class, 'store'])->name('holidays.store');
+        Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
+    });
 
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');

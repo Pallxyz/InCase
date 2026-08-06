@@ -423,13 +423,24 @@
 
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-foreground">UID RFID</label>
-                    <input
-                        type="text"
-                        name="rfid_uid"
-                        value="{{ old('_form') === 'add' ? old('rfid_uid') : '' }}"
-                        placeholder="Contoh: RF-9F21AC"
-                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                    >
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            name="rfid_uid"
+                            id="add-rfid_uid"
+                            value="{{ old('_form') === 'add' ? old('rfid_uid') : '' }}"
+                            placeholder="Contoh: RF-9F21AC"
+                            class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                        >
+                        <button
+                            type="button"
+                            id="scan-now-btn"
+                            class="shrink-0 whitespace-nowrap rounded-xl border border-primary bg-primary/5 px-3.5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                        >
+                            Scan Sekarang
+                        </button>
+                    </div>
+                    <p id="scan-now-status" class="mt-1.5 text-xs text-muted-foreground"></p>
                     @error('rfid_uid')
                         <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
                     @enderror
@@ -728,4 +739,55 @@
             });
         }
     </script>
+    <script>
+    (function () {
+        const btn = document.getElementById('scan-now-btn');
+        const input = document.getElementById('add-rfid_uid');
+        const status = document.getElementById('scan-now-status');
+        if (!btn || !input) return;
+
+        let polling = null;
+
+        btn.addEventListener('click', function () {
+            if (polling) return;
+
+            const startedAt = new Date().toISOString();
+            let secondsLeft = 15;
+
+            btn.disabled = true;
+            status.textContent = 'Nempelin kartu ke alat... (' + secondsLeft + 's)';
+            status.classList.remove('text-destructive');
+
+            polling = setInterval(function () {
+                secondsLeft--;
+
+                fetch('/items/scan-poll?since=' + encodeURIComponent(startedAt))
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data.found) {
+                            input.value = data.uid;
+                            status.textContent = 'Kartu terbaca: ' + data.uid;
+                            stopPolling();
+                            return;
+                        }
+
+                        if (secondsLeft <= 0) {
+                            status.textContent = 'Gak ada kartu kebaca. Coba lagi.';
+                            status.classList.add('text-destructive');
+                            stopPolling();
+                            return;
+                        }
+
+                        status.textContent = 'Nempelin kartu ke alat... (' + secondsLeft + 's)';
+                    });
+            }, 1500);
+        });
+
+        function stopPolling() {
+            clearInterval(polling);
+            polling = null;
+            btn.disabled = false;
+        }
+    })();
+</script>
 </x-layouts.dashboard>

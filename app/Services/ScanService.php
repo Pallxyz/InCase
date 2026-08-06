@@ -18,6 +18,11 @@ class ScanService
         $item = Item::where('rfid_uid', $rfidUid)->first();
 
         if (! $item) {
+            cache()->put('latest_unregistered_scan', [
+                'uid' => $rfidUid,
+                'at' => now()->toIso8601String(),
+            ], now()->addMinutes(3));
+
             return [
                 'code' => 404,
                 'body' => [
@@ -62,10 +67,10 @@ class ScanService
             ->whereDate('scan_logs.scanned_at', today())
             ->join('items', 'items.id', '=', 'scan_logs.item_id')
             ->pluck('items.name')
-            ->map(fn (string $name) => Str::lower(trim($name)));
+            ->map(fn(string $name) => Str::lower(trim($name)));
 
         $missingOriginalNames = $subject->requiredItems->pluck('name')
-            ->filter(fn (string $name) => ! $scannedNamesToday->contains(Str::lower(trim($name))));
+            ->filter(fn(string $name) => ! $scannedNamesToday->contains(Str::lower(trim($name))));
 
         if ($missingOriginalNames->isEmpty()) {
             return [
