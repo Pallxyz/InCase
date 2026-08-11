@@ -14,7 +14,6 @@ class DatabaseSeeder extends Seeder
             SchoolClassSeeder::class,
             StudentSeeder::class,
             SubjectSeeder::class,
-            ItemSeeder::class,
             MultiSchoolDemoSeeder::class,
         ]);
     }
