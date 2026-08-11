@@ -14,6 +14,7 @@ class Item extends Model
         'name',
         'category',
         'rfid_uid',
+        'quantity',
         'description',
         'status',
     ];

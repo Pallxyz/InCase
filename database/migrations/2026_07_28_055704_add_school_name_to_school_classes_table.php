@@ -9,9 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('school_classes', function (Blueprint $table) {
-            $table->string('school_name')->nullable()->after('name');
-        });
+        if (!Schema::hasColumn('school_classes', 'school_name')) {
+            Schema::table('school_classes', function (Blueprint $table) {
+                $table->string('school_name')->nullable()->after('name');
+            });
+        }
 
         // Backfill data lama (yang udah ada sebelum kolom ini) sebagai SMKN 1 Cirebon
         DB::table('school_classes')
@@ -21,8 +23,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('school_classes', function (Blueprint $table) {
-            $table->dropColumn('school_name');
-        });
+        if (Schema::hasColumn('school_classes', 'school_name')) {
+            Schema::table('school_classes', function (Blueprint $table) {
+                $table->dropColumn('school_name');
+            });
+        }
     }
 };

@@ -18,12 +18,16 @@ class UpdateItemRequest extends FormRequest
 
             'name' => 'required|max:255',
 
-            'category' => 'required|in:Book,Stationery,Electronics,Sports,Personal,Others',
+            'category' => 'required|in:paket,tulis,lks',
 
             'rfid_uid' => [
-                'required',
-                Rule::unique('items')->ignore($this->item),
-            ],
+            'nullable',
+            'string',
+            'max:255',
+            Rule::unique('items', 'rfid_uid')->ignore($this->route('item')),
+        ],
+
+            'quantity' => 'required|integer|min:0',
 
             'description' => 'nullable|max:500',
 
