@@ -18,7 +18,7 @@ class UpdateItemRequest extends FormRequest
 
             'name' => 'required|max:255',
 
-            'category' => 'required|in:paket,tulis,lks',
+            'category' => 'required|in:paket,tulis,lks,elektronik,olahraga',
 
             'rfid_uid' => [
             'nullable',

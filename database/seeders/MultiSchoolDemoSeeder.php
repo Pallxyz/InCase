@@ -51,6 +51,7 @@ class MultiSchoolDemoSeeder extends Seeder
                         'Buku Paket Matematika' => '11223344',
                         // sengaja gak ada kartu fisiknya -> bakal ketauan "kurang" pas didemo
                         'Buku Tulis Matematika' => null,
+                        'Baju Olahraga' => null,
                     ],
                 ],
                 [
@@ -87,6 +88,7 @@ class MultiSchoolDemoSeeder extends Seeder
                         'Laptop' => null,
                         'Buku Paket Matematika' => null,
                         'Buku Tulis Matematika' => null,
+                        'Baju Olahraga' => null,
                     ],
                 ],
                 [
@@ -124,6 +126,7 @@ class MultiSchoolDemoSeeder extends Seeder
                         'Buku Paket Matematika' => null,
                         'Buku Tulis Matematika' => null,
                         'Buku LKS Matematika' => null,
+                        'Baju Olahraga' => null,
                     ],
                 ],
                 [
@@ -207,7 +210,7 @@ class MultiSchoolDemoSeeder extends Seeder
             Item::create([
                 'user_id' => $student->id,
                 'name' => $itemName,
-                'category' => 'Electronics',
+                'category' => $this->guessCategory($itemName),
                 'rfid_uid' => $rfid ?? ('DEMO-' . Str::upper(Str::random(8))),
             ]);
         }
@@ -230,6 +233,24 @@ class MultiSchoolDemoSeeder extends Seeder
                 $subject->requiredItems()->create(['name' => $itemName]);
             }
         }
+    }
+
+    /**
+     * Nebak kategori barang dari namanya. Kategori valid:
+     * paket, tulis, lks, elektronik, olahraga.
+     */
+    private function guessCategory(string $itemName): string
+    {
+        $name = strtolower($itemName);
+
+        return match (true) {
+            str_contains($name, 'lks') => 'lks',
+            str_contains($name, 'tulis') => 'tulis',
+            str_contains($name, 'paket') => 'paket',
+            str_contains($name, 'laptop') => 'elektronik',
+            str_contains($name, 'olahraga') => 'olahraga',
+            default => 'paket',
+        };
     }
 
     private function renameSchoolEverywhere(string $oldName, string $newName): void

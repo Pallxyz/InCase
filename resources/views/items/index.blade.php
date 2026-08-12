@@ -3,7 +3,17 @@
     $categoryLabels = [
         'paket' => 'Buku Paket',
         'tulis' => 'Buku Tulis',
-        'lks'   => 'Buku LKS',
+        'lks' => 'Buku LKS',
+        'elektronik' => 'Elektronik',
+        'olahraga' => 'Olahraga',
+    ];
+
+    $categoryIcons = [
+        'paket' => 'book-open',
+        'tulis' => 'document-text',
+        'lks' => 'document-text',
+        'elektronik' => 'device-phone-mobile',
+        'olahraga' => 'tag',
     ];
 
     // Statistik dihitung dari collection $items
@@ -118,6 +128,8 @@
                                 <option value="paket">Buku Paket</option>
                                 <option value="tulis">Buku Tulis</option>
                                 <option value="lks">Buku LKS</option>
+                                <option value="elektronik">Elektronik</option>
+                                <option value="olahraga">Olahraga</option>
                             </select>
                             <x-icon.funnel class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         </div>
@@ -186,11 +198,7 @@
                                             <td class="px-5 py-4 align-middle">
                                                 <div class="flex items-center gap-3 min-w-0">
                                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                                        @if($item->category === 'tulis' || $item->category === 'lks')
-                                                            <x-icon.document-text class="h-5 w-5" />
-                                                        @else
-                                                            <x-icon.book-open class="h-5 w-5" />
-                                                        @endif
+                                                        <x-dynamic-component :component="'icon.' . ($categoryIcons[$item->category] ?? 'book-open')" class="h-5 w-5" />
                                                     </span>
                                                     <div class="min-w-0 flex-1">
                                                         <p class="font-semibold text-foreground truncate" title="{{ $item->name }}">{{ $item->name }}</p>
@@ -202,7 +210,7 @@
                                             {{-- Kategori --}}
                                             <td class="px-5 py-4 align-middle">
                                                 <span class="inline-flex items-center rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-foreground whitespace-nowrap">
-                                                    {{ $categoryLabels[$item->category] ?? 'Buku Paket' }}
+                                                    {{ $categoryLabels[$item->category] ?? 'Lainnya' }}
                                                 </span>
                                             </td>
 
@@ -318,7 +326,7 @@
                                         <div class="min-w-0">
                                             <p class="truncate font-semibold text-foreground leading-tight">{{ $item->name }}</p>
                                             <p class="text-xs text-muted-foreground mt-0.5">
-                                                {{ $categoryLabels[$item->category] ?? 'Buku Paket' }} • {{ $item->updated_at->translatedFormat('d M Y') }}
+                                                {{ $categoryLabels[$item->category] ?? 'Lainnya' }} • {{ $item->updated_at->translatedFormat('d M Y') }}
                                             </p>
                                         </div>
                                     </div>
@@ -442,14 +450,14 @@
                 </div>
 
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori Buku</label>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori</label>
                     <select
                         name="category"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="paket" @selected(old('category') === 'paket')>Buku Paket</option>
-                        <option value="tulis" @selected(old('category') === 'tulis')>Buku Tulis</option>
-                        <option value="lks" @selected(old('category') === 'lks')>Buku LKS</option>
+                        @foreach ($categoryLabels as $value => $label)
+                            <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
+                        @endforeach
                     </select>
                     @error('category')
                         <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
@@ -573,15 +581,15 @@
                 </div>
 
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori Buku</label>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori</label>
                     <select
                         name="category"
                         id="edit-category"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="paket">Buku Paket</option>
-                        <option value="tulis">Buku Tulis</option>
-                        <option value="lks">Buku LKS</option>
+                        @foreach ($categoryLabels as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
                     </select>
                     @error('category')
                         <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
