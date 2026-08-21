@@ -40,12 +40,13 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'role' => ['required', 'in:student,teacher'],
             'school_name' => ['required', 'string', 'max:255'],
             'days_per_week' => ['required', 'in:5,6'],
             'school_type' => ['nullable', 'in:SMK,SMA,SMP'],
-            'class_id' => ['required_without:new_class_name', 'nullable', 'exists:school_classes,id'],
-            'new_class_grade' => ['required_without:class_id', 'nullable', 'string', 'max:50'],
-            'new_class_name' => ['required_without:class_id', 'nullable', 'string', 'max:255'],
+            'class_id' => ['required_if:role,student', 'nullable', 'exists:school_classes,id'],
+            'new_class_grade' => ['nullable', 'string', 'max:50'],
+            'new_class_name' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -60,17 +61,20 @@ class RegisteredUserController extends Controller
             ]
         );
 
-        if ($request->filled('class_id')) {
-            $classId = $request->integer('class_id');
-        } else {
-            // Belum pilih kelas dari dropdown — entah sekolah baru total,
-            // atau user pilih "+ tambah kelas baru" di dropdown yang udah ada.
-            $class = SchoolClass::firstOrCreate(
-                ['name' => $request->new_class_name, 'school_name' => $school->name],
-                ['grade' => $request->new_class_grade, 'major' => $request->new_class_name]
-            );
+        $classId = null;
 
-            $classId = $class->id;
+        // Guru gak butuh class_id sama sekali. Cuma murid yang perlu kelas.
+        if ($request->role === 'student') {
+            if ($request->filled('class_id')) {
+                $classId = $request->integer('class_id');
+            } else {
+                $class = SchoolClass::firstOrCreate(
+                    ['name' => $request->new_class_name, 'school_name' => $school->name],
+                    ['grade' => $request->new_class_grade, 'major' => $request->new_class_name]
+                );
+
+                $classId = $class->id;
+            }
         }
 
         $user = User::create([
@@ -78,7 +82,7 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'school_name' => $school->name,
             'class_id' => $classId,
-            'role' => 'student',
+            'role' => $request->role,
             'password' => Hash::make($request->password),
         ]);
 

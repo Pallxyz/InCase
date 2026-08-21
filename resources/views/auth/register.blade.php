@@ -20,6 +20,24 @@
         <form method="POST" action="{{ route('register') }}" class="mt-8 flex flex-col gap-5">
             @csrf
 
+            {{-- Peran --}}
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-foreground">Daftar Sebagai</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="role" id="role-student" value="student" class="h-4 w-4" {{ old('role', 'student') === 'student' ? 'checked' : '' }}>
+                        <span class="text-sm text-foreground">Murid</span>
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="role" id="role-teacher" value="teacher" class="h-4 w-4" {{ old('role') === 'teacher' ? 'checked' : '' }}>
+                        <span class="text-sm text-foreground">Guru</span>
+                    </label>
+                </div>
+                @error('role')
+                    <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                @enderror
+            </div>
+
             {{-- Baris 1 — 2 kolom: Nama Lengkap | Email --}}
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <x-auth-input
@@ -80,7 +98,8 @@
                 @enderror
             </div>
 
-            {{-- Tingkat & Kelas (dropdown kalau sekolah udah ada, manual kalau belum) --}}
+            {{-- Tingkat & Kelas — cuma relevan buat Murid --}}
+            <div id="class-section-wrapper">
             <div id="existing-school-fields" class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
                     <label for="grade-select" class="mb-1.5 block text-sm font-medium text-foreground">
@@ -172,6 +191,7 @@
                 </div>
                 <input type="hidden" name="school_type" id="school_type_input" value="">
             </div>
+            </div>
 
             {{-- Baris — 2 kolom: Kata Sandi | Konfirmasi Kata Sandi --}}
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -261,6 +281,24 @@
             SMK: ['X', 'XI', 'XII'],
         };
 
+        const roleStudent = document.getElementById('role-student');
+        const roleTeacher = document.getElementById('role-teacher');
+        const classSectionWrapper = document.getElementById('class-section-wrapper');
+
+        function toggleClassSection() {
+            const isTeacher = roleTeacher.checked;
+            classSectionWrapper.style.display = isTeacher ? 'none' : '';
+
+            // Kalau guru, hapus wajib-isi di field kelas biar gak nyangkut validasi browser.
+            document.getElementById('class-select').required = false;
+            document.getElementById('new_class_grade').required = false;
+            document.getElementById('new_class_name_fresh').required = false;
+        }
+
+        roleStudent.addEventListener('change', toggleClassSection);
+        roleTeacher.addEventListener('change', toggleClassSection);
+        toggleClassSection();
+
         const schoolInput = document.querySelector('input[name="school_name"]');
         const gradeSelect = document.getElementById('grade-select');
         const classSelect = document.getElementById('class-select');
@@ -296,7 +334,16 @@
             return classesData.filter(function (c) { return normalize(c.school_name) === schoolName; });
         }
 
-        function populateGrades() {
+                function populateGrades() {
+            // Kalau Guru, jangan pernah nyentuh field kelas sama sekali.
+            if (roleTeacher.checked) {
+                classSectionWrapper.style.display = 'none';
+                classSelect.required = false;
+                newGradeFresh.required = false;
+                newNameFresh.required = false;
+                return;
+            }
+
             // Reset dulu semua kondisi setiap kali sekolah diketik ulang.
             newClassInline.classList.add('hidden');
             newNameInline.required = false;
@@ -314,7 +361,6 @@
             const school = findSchool(schoolInput.value);
 
             if (!school) {
-                // Sekolah baru total, belum pernah terdaftar sama sekali.
                 existingFields.classList.add('hidden');
                 newFields.classList.remove('hidden');
                 classSelect.required = false;
@@ -324,8 +370,6 @@
                 return;
             }
 
-            // Sekolah udah terdaftar — tampilin SEMUA tingkat standar buat jenjang ini,
-            // gak cuma tingkat yang kebetulan udah ada kelasnya.
             existingFields.classList.remove('hidden');
             newFields.classList.add('hidden');
             classSelect.required = true;
