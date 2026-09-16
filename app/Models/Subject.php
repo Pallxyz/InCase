@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'teacher_id',
     'class_id',
+    'academic_year_id', // tambahin ini
     'name',
     'location',
     'homework',
@@ -43,5 +44,10 @@ class Subject extends Model
             'has_exam' => 'boolean',
             'is_active' => 'boolean',
         ];
+    }
+
+        public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 }

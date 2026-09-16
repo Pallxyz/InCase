@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ItemScanPollController;
+use App\Http\Controllers\Teacher\AcademicYearController;
 
 use App\Http\Controllers\Teacher\SubjectController;
 use App\Http\Controllers\HolidayController;
@@ -42,6 +43,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/holidays', [HolidayController::class, 'index'])->name('holidays.index');
         Route::post('/holidays', [HolidayController::class, 'store'])->name('holidays.store');
         Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
+
+        Route::resource('academic-years', AcademicYearController::class)
+    ->only(['index', 'store', 'destroy']);
+
+Route::post('academic-years/{academicYear}/activate', [AcademicYearController::class, 'activate'])
+    ->name('academic-years.activate');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])

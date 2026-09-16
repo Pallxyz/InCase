@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateSubjectRequest;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
+use App\Models\AcademicYear;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,44 +20,47 @@ class SubjectController extends Controller
      * Display teacher schedules.
      */
     public function index(): View
-    {
-        /** @var User $user */
-        $user = User::findOrFail(Auth::id());
+{
+    /** @var User $user */
+    $user = User::findOrFail(Auth::id());
 
-        $subjects = Subject::with([
-            'teacher',
-            'schoolClass',
-            'requiredItems',
-        ])
-            ->where('teacher_id', $user->id)
-            ->where('is_active', true)
-            ->orderByRaw("
-                FIELD(day,
-                    'Monday',
-                    'Tuesday',
-                    'Wednesday',
-                    'Thursday',
-                    'Friday',
-                    'Saturday'
-                )
-            ")
-            ->orderBy('start_time')
-            ->get();
+    $activeYear = AcademicYear::active();
 
-        $school = \App\Models\School::where('name', $user->school_name)->first();
-        $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    $subjects = Subject::with([
+        'teacher',
+        'schoolClass',
+        'requiredItems',
+    ])
+        ->where('teacher_id', $user->id)
+        ->where('is_active', true)
+        ->when($activeYear, fn ($q) => $q->where('academic_year_id', $activeYear->id))
+        ->orderByRaw("
+            FIELD(day,
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday'
+            )
+        ")
+        ->orderBy('start_time')
+        ->get();
 
-        $classes = SchoolClass::where('school_name', $user->school_name)
-            ->orderBy('grade')
-            ->orderBy('major')
-            ->get();
+    $school = \App\Models\School::where('name', $user->school_name)->first();
+    $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-        return view('schedules.index', compact(
-            'subjects',
-            'classes',
-            'schoolDayNames'
-        ));
-    }
+    $classes = SchoolClass::where('school_name', $user->school_name)
+        ->orderBy('grade')
+        ->orderBy('major')
+        ->get();
+
+    return view('schedules.index', compact(
+        'subjects',
+        'classes',
+        'schoolDayNames'
+    ));
+}
 
     /**
      * Not used because application uses modal.
@@ -70,24 +74,33 @@ class SubjectController extends Controller
      * Store new subject.
      */
     public function store(
-        StoreSubjectRequest $request
-    ): RedirectResponse {
+    StoreSubjectRequest $request
+): RedirectResponse {
 
-        /** @var User $user */
-        $user = User::findOrFail(Auth::id());
+    /** @var User $user */
+    $user = User::findOrFail(Auth::id());
 
-        $data = $request->safe()->except('required_items');
+    $activeYear = \App\Models\AcademicYear::active();
 
-        $data['teacher_id'] = $user->id;
+    abort_if(
+        !$activeYear,
+        422,
+        'Belum ada tahun ajaran aktif. Hubungi admin sekolah.'
+    );
 
-        $subject = Subject::create($data);
+    $data = $request->safe()->except('required_items');
 
-        $this->syncRequiredItems($subject, $request->input('required_items'));
+    $data['teacher_id'] = $user->id;
+    $data['academic_year_id'] = $activeYear->id;
 
-        return redirect()
-            ->route('subjects.index')
-            ->with('success', 'Schedule created successfully.');
-    }
+    $subject = Subject::create($data);
+
+    $this->syncRequiredItems($subject, $request->input('required_items'));
+
+    return redirect()
+        ->route('subjects.index')
+        ->with('success', 'Schedule created successfully.');
+}
 
     /**
      * Display one schedule.

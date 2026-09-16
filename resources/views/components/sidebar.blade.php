@@ -35,21 +35,21 @@
 
     } elseif ($user->role === 'teacher') {
 
-        $navItems[] = [
-            'icon' => 'calendar-days',
-            'label' => 'Jadwal',
-            'href' => route('subjects.index'),
-            'active' => request()->routeIs('subjects.*'),
-        ];
-
-    }
+    $navItems[] = [
+        'icon' => 'calendar-days',
+        'label' => 'Jadwal',
+        'href' => route('subjects.index'),
+        'active' => request()->routeIs('subjects.*'),
+    ];
 
     $navItems[] = [
-        'icon' => 'cog-6-tooth',
-        'label' => 'Pengaturan',
-        'href' => route('profile.edit'),
-        'active' => request()->routeIs('profile.*'),
+        'icon' => 'academic-cap',
+        'label' => 'Tahun Ajaran',
+        'href' => route('academic-years.index'),
+        'active' => request()->routeIs('academic-years.*'),
     ];
+
+};
 @endphp
 
 {{-- Backdrop mobile — nutup sidebar pas diklik di luar --}}
