@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Holiday;
 use App\Models\ScanLog;
 use App\Models\Subject;
 use App\Models\User;
@@ -20,6 +21,7 @@ class SendItemReminders extends Command
         $windowEnd = $now->copy()->addMinutes(30)->format('H:i');
 
         $subjects = Subject::with('requiredItems')
+            ->inActiveYear()
             ->where('day', $now->englishDayOfWeek)
             ->where('is_active', true)
             ->whereTime('start_time', '>=', $now->format('H:i'))
@@ -38,6 +40,11 @@ class SendItemReminders extends Command
                 ->get();
 
             foreach ($students as $student) {
+                // Libur sekolah/kelas: jangan kirim pengingat.
+                if (Holiday::findFor($student->school_name, $student->class_id, $now)) {
+                    continue;
+                }
+
                 $missing = $this->missingItemsForStudent($student->id, $requiredNames);
 
                 if ($missing->isNotEmpty()) {

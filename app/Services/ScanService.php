@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Holiday;
 use App\Models\Item;
 use App\Models\ScanLog;
 use App\Models\Subject;
@@ -43,7 +44,24 @@ class ScanService
 
         $now = now();
 
+        // Hari libur: scan tetap dicatat, tapi tidak dicocokkan dengan pelajaran.
+        // status tetap 'success' supaya alat scan (ESP) tidak perlu diubah.
+        $holiday = Holiday::findFor($student->school_name, $student->class_id, $now);
+
+        if ($holiday) {
+            return [
+                'code' => 200,
+                'body' => [
+                    'status' => 'success',
+                    'item' => $item->name,
+                    'holiday' => $holiday->name,
+                    'message' => "{$item->name} berhasil dipindai. Hari ini libur: {$holiday->name}.",
+                ],
+            ];
+        }
+
         $subject = Subject::with('requiredItems')
+            ->inActiveYear()
             ->where('class_id', $student->class_id)
             ->where('day', $now->englishDayOfWeek)
             ->where('is_active', true)

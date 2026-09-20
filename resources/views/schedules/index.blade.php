@@ -23,10 +23,6 @@
     $isStudent = auth()->check() && (auth()->user()->role ?? null) === 'student';
     $canAddSchedule = $isTeacher || $isStudent;
 
-    $availableItems = $canAddSchedule
-        ? \App\Models\Item::where('user_id', auth()->id())->orderBy('name')->get(['id', 'name'])
-        : collect();
-
     $totalJadwal = $subjects->count();
     $totalMataPelajaran = $subjects->pluck('name')->unique()->count();
     $jadwalMingguIni = $subjects->count();
@@ -53,6 +49,7 @@
         'id' => $class->id,
         'grade' => $class->grade,
         'major' => $class->major,
+        'label' => $class->name,
     ])->values();
 @endphp
 
@@ -413,24 +410,33 @@
                                     @enderror
                                 </div>
 
-                                <div>
-                                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
-                                    <div class="relative">
-                                        <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
-                                            <x-icon.academic-cap class="h-4 w-4" />
-                                        </span>
-                                        <select name="class_id" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
-                                            <option value="" disabled selected>Pilih kelas</option>
-                                            @foreach ($classes as $class)
-                                                <option value="{{ $class->id }}" @selected((string) old('class_id') === (string) $class->id)>
-                                                    {{ $class->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1.5 block text-sm font-medium text-foreground">Tingkat</label>
+                                        <div class="relative">
+                                            <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+                                                <x-icon.academic-cap class="h-4 w-4" />
+                                            </span>
+                                            <select id="add-grade-select" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                                                <option value="" disabled selected>Pilih tingkat</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    @error('class_id')
-                                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                                    @enderror
+
+                                    <div>
+                                        <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
+                                        <div class="relative">
+                                            <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+                                                <x-icon.tag class="h-4 w-4" />
+                                            </span>
+                                            <select name="class_id" id="add-class-select" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                                                <option value="" disabled selected>Pilih tingkat dulu</option>
+                                            </select>
+                                        </div>
+                                        @error('class_id')
+                                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
 
                                 <div>
@@ -534,26 +540,15 @@
                         </div>
 
                         <div>
-                            <div class="mb-3 flex items-center justify-between">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Barang Wajib</p>
-                                <span class="add-items-selected-count text-xs font-semibold text-blue-600">0 dipilih</span>
-                            </div>
-                            <div class="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border">
-                                @forelse ($availableItems as $item)
-                                    <label class="item-checkbox-row flex cursor-pointer items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted">
-                                        <span class="item-checkbox-box flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-300 text-white transition-colors">
-                                            <x-icon.check-circle class="pointer-events-none h-3.5 w-3.5 opacity-0" />
-                                        </span>
-                                        <input type="checkbox" name="items[]" value="{{ $item->id }}" class="item-checkbox sr-only" @checked(collect(old('items'))->contains($item->id))>
-                                        <x-icon.archive-box class="h-4 w-4 shrink-0 text-slate-400" />
-                                        <span class="text-sm text-foreground">{{ $item->name }}</span>
-                                    </label>
-                                @empty
-                                    <p class="px-3.5 py-4 text-center text-sm text-muted-foreground">
-                                        Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
-                                    </p>
-                                @endforelse
-                            </div>
+                            <label for="add-required_items" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">Barang Wajib</label>
+                            <textarea
+                                id="add-required_items"
+                                name="required_items"
+                                rows="2"
+                                placeholder="Contoh: Buku Paket Matematika, Buku Tulis Matematika, Laptop"
+                                class="w-full rounded-xl border border-border px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            >{{ old('required_items') }}</textarea>
+                            <p class="mt-1.5 text-xs text-muted-foreground">Pisahkan dengan koma.</p>
                         </div>
                     </div>
 
@@ -629,22 +624,33 @@
                         @enderror
                     </div>
 
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
-                        <div class="relative">
-                            <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
-                                <x-icon.academic-cap class="h-4 w-4" />
-                            </span>
-                            <select name="class_id" id="edit-class_id" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
-                                <option value="" disabled>Pilih kelas</option>
-                                @foreach ($classes as $class)
-                                    <option value="{{ $class->id }}">{{ $class->name }}</option>
-                                @endforeach
-                            </select>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-foreground">Tingkat</label>
+                            <div class="relative">
+                                <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+                                    <x-icon.academic-cap class="h-4 w-4" />
+                                </span>
+                                <select id="edit-grade-select" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                                    <option value="" disabled selected>Pilih tingkat</option>
+                                </select>
+                            </div>
                         </div>
-                        @error('class_id')
-                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                        @enderror
+
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-foreground">Kelas</label>
+                            <div class="relative">
+                                <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+                                    <x-icon.tag class="h-4 w-4" />
+                                </span>
+                                <select name="class_id" id="edit-class_id" class="block w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                                    <option value="" disabled>Pilih tingkat dulu</option>
+                                </select>
+                            </div>
+                            @error('class_id')
+                                <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
 
                     <div>
@@ -719,26 +725,15 @@
                     </label>
 
                     <div>
-                        <div class="mb-3 flex items-center justify-between">
-                            <label class="block text-sm font-medium text-foreground">Barang Wajib</label>
-                            <span class="edit-items-selected-count text-xs font-semibold text-blue-600">0 dipilih</span>
-                        </div>
-                        <div class="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border">
-                            @forelse ($availableItems as $item)
-                                <label class="item-checkbox-row flex cursor-pointer items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted">
-                                    <span class="item-checkbox-box flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-300 text-white transition-colors">
-                                        <x-icon.check-circle class="pointer-events-none h-3.5 w-3.5 opacity-0" />
-                                    </span>
-                                    <input type="checkbox" name="items[]" value="{{ $item->id }}" class="edit-item-checkbox item-checkbox sr-only">
-                                    <x-icon.archive-box class="h-4 w-4 shrink-0 text-slate-400" />
-                                    <span class="text-sm text-foreground">{{ $item->name }}</span>
-                                </label>
-                            @empty
-                                <p class="px-3.5 py-4 text-center text-sm text-muted-foreground">
-                                    Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
-                                </p>
-                            @endforelse
-                        </div>
+                        <label for="edit-required_items" class="mb-2 block text-sm font-medium text-foreground">Barang Wajib</label>
+                        <textarea
+                            id="edit-required_items"
+                            name="required_items"
+                            rows="2"
+                            placeholder="Contoh: Buku Paket Matematika, Buku Tulis Matematika, Laptop"
+                            class="w-full rounded-xl border border-border px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        ></textarea>
+                        <p class="mt-1.5 text-xs text-muted-foreground">Pisahkan dengan koma.</p>
                     </div>
 
                     <div class="sticky bottom-0 -mx-1 mt-1 flex items-center gap-3 bg-white px-1 pt-2">
@@ -839,54 +834,6 @@
             openModal('add-subject-modal');
         }
 
-        function openEditModal(button) {
-            const form = document.getElementById('edit-subject-form');
-            if (!form) return;
-
-            const id = button.dataset.id;
-            const loadingIndicator = document.getElementById('edit-modal-loading');
-            const errorBanner = document.getElementById('edit-modal-error');
-
-            errorBanner.classList.add('hidden');
-            errorBanner.classList.remove('flex');
-            form.classList.add('opacity-40', 'pointer-events-none');
-            loadingIndicator.classList.remove('hidden');
-
-            openModal('edit-subject-modal');
-
-            fetch('/subjects/' + id + '/edit')
-                .then(function (response) { return response.json(); })
-                .then(function (subject) {
-                    document.getElementById('edit-name').value = subject.name ?? '';
-                    document.getElementById('edit-location').value = subject.location ?? '';
-                    document.getElementById('edit-day').value = subject.day ?? '';
-                    document.getElementById('edit-class_id').value = subject.class_id ?? '';
-                    document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
-                    document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);
-                    document.getElementById('edit-homework').value = subject.homework ?? '';
-                    document.getElementById('edit-has_exam').checked = !!subject.has_exam;
-
-                    const assignedIds = (subject.items || []).map(function (item) { return item.id; });
-                    document.querySelectorAll('.edit-item-checkbox').forEach(function (checkbox) {
-                        checkbox.checked = assignedIds.includes(Number(checkbox.value));
-                    });
-
-                    document.querySelectorAll('.item-checkbox').forEach(function (cb) {
-                        cb.dispatchEvent(new Event('change'));
-                    });
-
-                    form.action = '/subjects/' + id;
-                })
-                .catch(function () {
-                    errorBanner.classList.remove('hidden');
-                    errorBanner.classList.add('flex');
-                })
-                .finally(function () {
-                    form.classList.remove('opacity-40', 'pointer-events-none');
-                    loadingIndicator.classList.add('hidden');
-                });
-        }
-
         function openDeleteModal(button) {
             const form = document.getElementById('delete-subject-form');
             if (!form) return;
@@ -896,30 +843,6 @@
             form.action = '/subjects/' + button.dataset.id;
             openModal('delete-subject-modal');
         }
-
-        document.querySelectorAll('.item-checkbox').forEach(function (checkbox) {
-            const row = checkbox.closest('.item-checkbox-row');
-            const box = row ? row.querySelector('.item-checkbox-box') : null;
-            const boxIcon = box ? box.querySelector('svg') : null;
-
-            const sync = function () {
-                if (row) row.classList.toggle('bg-blue-50/60', checkbox.checked);
-                if (box) {
-                    box.classList.toggle('bg-blue-600', checkbox.checked);
-                    box.classList.toggle('border-blue-600', checkbox.checked);
-                }
-                if (boxIcon) boxIcon.classList.toggle('opacity-0', !checkbox.checked);
-
-                const scope = row ? row.closest('form') : null;
-                if (scope) {
-                    const count = scope.querySelectorAll('.item-checkbox:checked').length;
-                    const counter = scope.querySelector('.add-items-selected-count, .edit-items-selected-count');
-                    if (counter) counter.textContent = count + ' dipilih';
-                }
-            };
-            checkbox.addEventListener('change', sync);
-            sync();
-        });
 
         document.querySelectorAll('form.schedule-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
@@ -999,6 +922,126 @@
                 }
             @endif
         })();
+
+        // ============ CASCADING DROPDOWN TINGKAT -> KELAS ============
+        (function () {
+            const classesData = @json($classesJson);
+
+            function uniqueGrades() {
+                return [...new Set(classesData.map(function (c) { return c.grade; }))];
+            }
+
+            function populateGradeOptions(gradeSelect) {
+                gradeSelect.innerHTML = '<option value="" disabled selected>Pilih tingkat</option>';
+                uniqueGrades().forEach(function (grade) {
+                    const opt = document.createElement('option');
+                    opt.value = grade;
+                    opt.textContent = grade;
+                    gradeSelect.appendChild(opt);
+                });
+            }
+
+            function populateClassOptions(classSelect, grade, selectedId) {
+                const filtered = classesData.filter(function (c) { return c.grade === grade; });
+
+                if (filtered.length === 0) {
+                    classSelect.innerHTML = '<option value="" disabled selected>Tidak ada kelas</option>';
+                    return;
+                }
+
+                classSelect.innerHTML = '<option value="" disabled selected>Pilih kelas</option>' +
+                    filtered.map(function (c) {
+                        const isSelected = selectedId && String(c.id) === String(selectedId);
+                        return '<option value="' + c.id + '"' + (isSelected ? ' selected' : '') + '>' + c.label + '</option>';
+                    }).join('');
+            }
+
+            // ---- Form Tambah Jadwal ----
+            const addGradeSelect = document.getElementById('add-grade-select');
+            const addClassSelect = document.getElementById('add-class-select');
+
+            if (addGradeSelect && addClassSelect) {
+                populateGradeOptions(addGradeSelect);
+
+                addGradeSelect.addEventListener('change', function () {
+                    populateClassOptions(addClassSelect, this.value, null);
+                });
+
+                @if (old('class_id'))
+                    (function () {
+                        const oldClass = classesData.find(function (c) {
+                            return String(c.id) === '{{ old('class_id') }}';
+                        });
+                        if (oldClass) {
+                            addGradeSelect.value = oldClass.grade;
+                            populateClassOptions(addClassSelect, oldClass.grade, oldClass.id);
+                        }
+                    })();
+                @endif
+            }
+
+            // ---- Form Edit Jadwal ----
+            const editGradeSelect = document.getElementById('edit-grade-select');
+            const editClassSelect = document.getElementById('edit-class_id');
+
+            if (editGradeSelect && editClassSelect) {
+                populateGradeOptions(editGradeSelect);
+
+                editGradeSelect.addEventListener('change', function () {
+                    populateClassOptions(editClassSelect, this.value, null);
+                });
+            }
+
+            // ---- openEditModal (dipanggil dari tombol Edit di subject-card) ----
+            window.openEditModal = function (button) {
+                const form = document.getElementById('edit-subject-form');
+                if (!form) return;
+
+                const id = button.dataset.id;
+                const loadingIndicator = document.getElementById('edit-modal-loading');
+                const errorBanner = document.getElementById('edit-modal-error');
+
+                errorBanner.classList.add('hidden');
+                errorBanner.classList.remove('flex');
+                form.classList.add('opacity-40', 'pointer-events-none');
+                loadingIndicator.classList.remove('hidden');
+
+                openModal('edit-subject-modal');
+
+                fetch('/subjects/' + id + '/edit')
+                    .then(function (response) { return response.json(); })
+                    .then(function (subject) {
+                        document.getElementById('edit-name').value = subject.name ?? '';
+                        document.getElementById('edit-location').value = subject.location ?? '';
+                        document.getElementById('edit-day').value = subject.day ?? '';
+                        document.getElementById('edit-start_time').value = (subject.start_time ?? '').toString().slice(0, 5);
+                        document.getElementById('edit-end_time').value = (subject.end_time ?? '').toString().slice(0, 5);
+                        document.getElementById('edit-homework').value = subject.homework ?? '';
+                        document.getElementById('edit-has_exam').checked = !!subject.has_exam;
+
+                        document.getElementById('edit-required_items').value =
+                            (subject.requiredItems || []).map(function (item) { return item.name; }).join(', ');
+
+                        const currentClass = classesData.find(function (c) {
+                            return String(c.id) === String(subject.class_id);
+                        });
+
+                        if (currentClass) {
+                            editGradeSelect.value = currentClass.grade;
+                            populateClassOptions(editClassSelect, currentClass.grade, currentClass.id);
+                        }
+
+                        form.action = '/subjects/' + id;
+                    })
+                    .catch(function () {
+                        errorBanner.classList.remove('hidden');
+                        errorBanner.classList.add('flex');
+                    })
+                    .finally(function () {
+                        form.classList.remove('opacity-40', 'pointer-events-none');
+                        loadingIndicator.classList.add('hidden');
+                    });
+            };
+        })();
     </script>
-    <script id="available-classes-json" type="application/json">{!! $classesJson->toJson() !!}</script>
 </x-layouts.dashboard>

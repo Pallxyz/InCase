@@ -42,14 +42,22 @@
         'active' => request()->routeIs('subjects.*'),
     ];
 
-    $navItems[] = [
-        'icon' => 'academic-cap',
-        'label' => 'Tahun Ajaran',
-        'href' => route('academic-years.index'),
-        'active' => request()->routeIs('academic-years.*'),
-    ];
+    } elseif ($user->role === 'admin') {
 
-};
+        $navItems[] = [
+            'icon' => 'academic-cap',
+            'label' => 'Tahun Ajaran',
+            'href' => route('academic-years.index'),
+            'active' => request()->routeIs('academic-years.*'),
+        ];
+
+        $navItems[] = [
+            'icon' => 'calendar',
+            'label' => 'Hari Libur',
+            'href' => route('holidays.index'),
+            'active' => request()->routeIs('holidays.*'),
+        ];
+    }
 @endphp
 
 {{-- Backdrop mobile — nutup sidebar pas diklik di luar --}}

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Holiday;
 use App\Models\Item;
 use App\Models\ScanLog;
 use App\Models\Subject;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -13,9 +16,15 @@ class DashboardController extends Controller
     /**
      * Display dashboard based on authenticated user role.
      */
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
         $user = Auth::user();
+
+        // Admin belum punya dashboard sendiri (langkah berikutnya),
+        // sementara diarahkan ke halaman Tahun Ajaran.
+        if ($user->role === 'admin') {
+            return redirect()->route('academic-years.index');
+        }
         $today = now()->englishDayOfWeek;
 
         /*
@@ -30,14 +39,21 @@ class DashboardController extends Controller
                     'requiredItems',
                 ])
                 ->where('class_id', $user->class_id)
+                ->inActiveYear()
                 ->where('day', $today)
                 ->where('is_active', true)
                 ->orderBy('start_time')
                 ->get();
 
-            $items = Item::where('user_id', $user->id)
-                ->orderBy('name')
-                ->get();
+            // Hari libur (sekolah / kelas ini): tidak ada jadwal & barang wajib hari ini.
+            $holiday = Holiday::findFor($user->school_name, $user->class_id, today());
+
+            if ($holiday) {
+                $todaySubjects = collect();
+            }
+
+            // Ruang pengganti hari ini (mis. pindah ke masjid) menggantikan ruang biasa.
+            Subject::applyRoomChanges($todaySubjects, today());
 
             $todayScans = ScanLog::with('item')
                 ->where('user_id', $user->id)
@@ -45,11 +61,45 @@ class DashboardController extends Controller
                 ->latest('scanned_at')
                 ->get();
 
-            $packedItemIds = $todayScans
+            $scannedItemIds = $todayScans
                 ->pluck('item_id')
                 ->unique();
 
-            $packedCount = $packedItemIds->count();
+            // Barang WAJIB hari ini = gabungan barang wajib semua pelajaran hari ini
+            // (nama yang sama di beberapa pelajaran cuma dihitung sekali).
+            $requiredNames = $todaySubjects
+                ->flatMap(fn ($subject) => $subject->requiredItems->pluck('name'))
+                ->map(fn ($name) => trim($name))
+                ->filter()
+                ->unique(fn ($name) => Str::lower($name))
+                ->values();
+
+            // Barang milik siswa, dikelompokkan per nama (dicocokkan sama seperti ScanService).
+            $myItemsByName = Item::where('user_id', $user->id)
+                ->get()
+                ->groupBy(fn ($item) => Str::lower(trim($item->name)));
+
+            // Satu baris per barang wajib. Kalau siswa punya barangnya, pakai barang itu
+            // (utamakan yang sudah discan hari ini). Kalau belum terdaftar, tetap
+            // ditampilkan sebagai "belum terdeteksi" supaya kelihatan masih kurang.
+            $items = $requiredNames
+                ->map(function ($name) use ($myItemsByName, $scannedItemIds) {
+                    $owned = $myItemsByName->get(Str::lower($name));
+
+                    if (! $owned) {
+                        return new Item(['name' => $name]);
+                    }
+
+                    return $owned->first(fn ($item) => $scannedItemIds->contains($item->id))
+                        ?? $owned->first();
+                })
+                ->sortBy(fn ($item) => Str::lower($item->name))
+                ->values();
+
+            $packedCount = $items
+                ->filter(fn ($item) => $item->id && $scannedItemIds->contains($item->id))
+                ->count();
+
             $totalItems = $items->count();
 
             $progress = $totalItems > 0
@@ -65,6 +115,7 @@ class DashboardController extends Controller
                 'packedCount' => $packedCount,
                 'totalItems' => $totalItems,
                 'progress' => $progress,
+                'holiday' => $holiday,
                 // Teacher only
                 'subjectCount' => 0,
                 'studentCount' => 0,
@@ -81,12 +132,20 @@ class DashboardController extends Controller
                 'requiredItems',
             ])
             ->where('teacher_id', $user->id)
+            ->inActiveYear()
             ->where('day', $today)
             ->where('is_active', true)
             ->orderBy('start_time')
             ->get();
 
-        $subjectCount = Subject::where(
+        // Kelas yang sedang libur tidak dihitung.
+        $todaySubjects = $todaySubjects->reject(
+            fn ($subject) => Holiday::findFor($user->school_name, $subject->class_id, today())
+        )->values();
+
+        Subject::applyRoomChanges($todaySubjects, today());
+
+        $subjectCount = Subject::inActiveYear()->where(
             'teacher_id',
             $user->id
         )->count();
@@ -113,6 +172,7 @@ class DashboardController extends Controller
             'packedCount' => 0,
             'totalItems' => 0,
             'progress' => 0,
+            'holiday' => null,
         ]);
     }
 }

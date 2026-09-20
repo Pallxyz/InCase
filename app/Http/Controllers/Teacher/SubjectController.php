@@ -24,8 +24,6 @@ class SubjectController extends Controller
     /** @var User $user */
     $user = User::findOrFail(Auth::id());
 
-    $activeYear = AcademicYear::active();
-
     $subjects = Subject::with([
         'teacher',
         'schoolClass',
@@ -33,7 +31,7 @@ class SubjectController extends Controller
     ])
         ->where('teacher_id', $user->id)
         ->where('is_active', true)
-        ->when($activeYear, fn ($q) => $q->where('academic_year_id', $activeYear->id))
+        ->inActiveYear()
         ->orderByRaw("
             FIELD(day,
                 'Monday',
