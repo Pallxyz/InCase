@@ -11,11 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SchoolSeeder::class,
             AdminSeeder::class,
-            TeacherSeeder::class,
-            SchoolClassSeeder::class,
-            StudentSeeder::class,
-            SubjectSeeder::class,
-            MultiSchoolDemoSeeder::class,
+            RplDemoSeeder::class,   // 1 SMK, jurusan RPL, 6 kelas + jadwal + siswa + barang
         ]);
     }
 }

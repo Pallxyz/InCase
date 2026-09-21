@@ -130,14 +130,19 @@ class ScheduleConflictChecker
      * bertumpuk dengan jam yang diminta.
      * Dua rentang bertumpuk kalau: mulai_A < selesai_B  DAN  selesai_A > mulai_B
      */
-    private function overlapping(array $data, ?int $academicYearId, ?int $ignoreSubjectId): \Illuminate\Support\Collection
+        private function overlapping(array $data, ?int $academicYearId, ?int $ignoreSubjectId): \Illuminate\Support\Collection
     {
+        // Samakan format jam ke H:i:s: "12:00" vs "12:00:00" bisa dianggap beda
+        // (dan jam menempel jadi dianggap bentrok) di sebagian database.
+        $start = Carbon::parse($data['start_time'])->format('H:i:s');
+        $end = Carbon::parse($data['end_time'])->format('H:i:s');
+
         return Subject::with(['schoolClass', 'teacher'])
             ->where('is_active', true)
             ->where('academic_year_id', $academicYearId)
             ->where('day', $data['day'])
-            ->whereTime('start_time', '<', $data['end_time'])
-            ->whereTime('end_time', '>', $data['start_time'])
+            ->whereTime('start_time', '<', $end)
+            ->whereTime('end_time', '>', $start)
             ->when($ignoreSubjectId, fn ($q) => $q->where('id', '!=', $ignoreSubjectId))
             ->get();
     }
