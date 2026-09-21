@@ -35,21 +35,29 @@
 
     } elseif ($user->role === 'teacher') {
 
+    $navItems[] = [
+        'icon' => 'calendar-days',
+        'label' => 'Jadwal',
+        'href' => route('subjects.index'),
+        'active' => request()->routeIs('subjects.*'),
+    ];
+
+    } elseif ($user->role === 'admin') {
+
         $navItems[] = [
-            'icon' => 'calendar-days',
-            'label' => 'Jadwal',
-            'href' => route('subjects.index'),
-            'active' => request()->routeIs('subjects.*'),
+            'icon' => 'academic-cap',
+            'label' => 'Tahun Ajaran',
+            'href' => route('academic-years.index'),
+            'active' => request()->routeIs('academic-years.*'),
         ];
 
+        $navItems[] = [
+            'icon' => 'calendar',
+            'label' => 'Hari Libur',
+            'href' => route('holidays.index'),
+            'active' => request()->routeIs('holidays.*'),
+        ];
     }
-
-    $navItems[] = [
-        'icon' => 'cog-6-tooth',
-        'label' => 'Pengaturan',
-        'href' => route('profile.edit'),
-        'active' => request()->routeIs('profile.*'),
-    ];
 @endphp
 
 {{-- Backdrop mobile — nutup sidebar pas diklik di luar --}}

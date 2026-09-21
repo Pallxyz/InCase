@@ -26,11 +26,16 @@ class Holiday extends Model
     }
 
     /**
-     * Cek apakah tanggal tertentu itu libur buat sekolah + kelas tertentu.
+     * Cari libur yang berlaku buat sekolah + kelas pada tanggal tertentu.
      * class_id null di row artinya berlaku buat semua kelas di sekolah itu.
+     * Return null kalau tidak libur.
      */
-    public static function isHoliday(string $schoolName, ?int $classId, \Carbon\Carbon $date): bool
+    public static function findFor(?string $schoolName, ?int $classId, \Carbon\Carbon $date): ?self
     {
+        if (blank($schoolName)) {
+            return null;
+        }
+
         return static::where('school_name', $schoolName)
             ->whereDate('date', $date)
             ->where(function ($query) use ($classId) {
@@ -40,6 +45,14 @@ class Holiday extends Model
                     $query->orWhere('class_id', $classId);
                 }
             })
-            ->exists();
+            ->first();
+    }
+
+    /**
+     * Cek apakah tanggal tertentu itu libur buat sekolah + kelas tertentu.
+     */
+    public static function isHoliday(string $schoolName, ?int $classId, \Carbon\Carbon $date): bool
+    {
+        return static::findFor($schoolName, $classId, $date) !== null;
     }
 }

@@ -16,7 +16,7 @@ class StoreItemRequest extends FormRequest
     {
         return [
             'name'        => 'required|max:255',
-            'category'    => ['required', 'string', Rule::in(['paket', 'tulis', 'lks'])],
+            'category'    => ['required', 'string', Rule::in(['paket', 'tulis', 'lks', 'elektronik', 'olahraga'])],
             'rfid_uid' => 'nullable|string|max:255|unique:items,rfid_uid',
             'quantity'    => 'required|integer|min:0',
             'description' => 'nullable|max:500',

@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ChecksScheduleConflicts;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateSubjectRequest extends FormRequest
 {
+    use ChecksScheduleConflicts;
+
     public function authorize(): bool
     {
         return Auth::check()
@@ -58,5 +62,17 @@ class UpdateSubjectRequest extends FormRequest
                 'max:1000',
             ],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $subject = $this->route('subject');
+
+        $this->checkScheduleConflicts(
+            $validator,
+            $subject->academic_year_id,    // tahun ajaran milik jadwal itu sendiri
+            $subject->teacher_id,
+            $subject->id,                  // jangan bentrok dengan dirinya sendiri
+        );
     }
 }

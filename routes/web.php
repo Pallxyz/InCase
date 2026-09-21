@@ -5,8 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ItemScanPollController;
+use App\Http\Controllers\Teacher\AcademicYearController;
 
 use App\Http\Controllers\Teacher\SubjectController;
+use App\Http\Controllers\Teacher\RoomChangeController;
 use App\Http\Controllers\HolidayController;
 
 use App\Http\Controllers\Student\ItemController;
@@ -36,12 +38,35 @@ Route::middleware('auth')->group(function () {
             ->name('schedule.index');
     });
 
-    Route::middleware('role:teacher')->group(function () {
-        Route::resource('subjects', SubjectController::class);
+    // ADMIN: kelola tahun ajaran & hari libur sekolah
+    Route::middleware('role:admin')->group(function () {
 
         Route::get('/holidays', [HolidayController::class, 'index'])->name('holidays.index');
         Route::post('/holidays', [HolidayController::class, 'store'])->name('holidays.store');
         Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
+
+        Route::resource('academic-years', AcademicYearController::class)
+            ->only(['index', 'store', 'destroy']);
+
+        Route::post('academic-years/{academicYear}/activate', [AcademicYearController::class, 'activate'])
+            ->name('academic-years.activate');
+
+        Route::post('academic-years/{academicYear}/copy-schedules', [AcademicYearController::class, 'copySchedules'])
+            ->name('academic-years.copy-schedules');
+
+        Route::get('academic-years/{academicYear}/export', [AcademicYearController::class, 'export'])
+            ->name('academic-years.export');
+    });
+
+    // GURU: kelola jadwal, barang wajib, dan PR miliknya sendiri
+    Route::middleware('role:teacher')->group(function () {
+        Route::resource('subjects', SubjectController::class);
+
+        // Pindah ruang untuk satu tanggal (bukan permanen)
+        Route::post('subjects/{subject}/room-changes', [RoomChangeController::class, 'store'])
+            ->name('subjects.room-changes.store');
+        Route::delete('subjects/{subject}/room-changes/{roomChange}', [RoomChangeController::class, 'destroy'])
+            ->name('subjects.room-changes.destroy');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])

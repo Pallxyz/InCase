@@ -18,6 +18,7 @@ class ScheduleController extends Controller
         $user = User::findOrFail(Auth::id());
 
         $subjects = Subject::with(['teacher', 'schoolClass', 'requiredItems'])
+            ->inActiveYear()
             ->where('class_id', $user->class_id)
             ->where('is_active', true)
             ->orderBy('day')

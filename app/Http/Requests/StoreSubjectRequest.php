@@ -2,12 +2,17 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ChecksScheduleConflicts;
+use App\Models\AcademicYear;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreSubjectRequest extends FormRequest
 {
+    use ChecksScheduleConflicts;
+
     public function authorize(): bool
     {
         return Auth::check()
@@ -58,5 +63,14 @@ class StoreSubjectRequest extends FormRequest
                 'max:1000',
             ],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $this->checkScheduleConflicts(
+            $validator,
+            AcademicYear::active()?->id,   // jadwal baru selalu masuk tahun ajaran aktif
+            $this->user()->id,
+        );
     }
 }
