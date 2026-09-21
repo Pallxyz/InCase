@@ -6,8 +6,8 @@
         'lks'   => 'Buku LKS',
     ];
 
-    // Statistik dihitung dari collection $items
-    $totalItems = $items->count();
+    // Statistik dihitung dari collection/paginator $items
+    $totalItems = method_exists($items, 'total') ? $items->total() : $items->count();
     $activeItems = $items->where('status', 'active')->count();
     $archivedItems = $items->where('status', 'archived')->count();
     $rfidRegistered = $items->whereNotNull('rfid_uid')->count();
@@ -159,7 +159,7 @@
                     </div>
                 @else
                     {{-- DESKTOP TABLE VIEW --}}
-                    <div class="mt-6 hidden overflow-hidden rounded-[24px] border border-border bg-card shadow-sm sm:block">
+                    <div class="mt-6 hidden rounded-[24px] border border-border bg-card shadow-sm sm:block">
                         <div class="max-h-[600px] overflow-x-auto overflow-y-auto">
                             <table class="w-full text-left table-fixed min-w-[850px]">
                                 <thead class="sticky top-0 z-10 bg-muted/95 backdrop-blur">
@@ -177,9 +177,9 @@
                                     @foreach ($items as $item)
                                         <tr
                                             class="item-row transition-colors hover:bg-muted/40"
-                                            data-name="{{ strtolower($item->name) }}"
-                                            data-rfid="{{ strtolower($item->rfid_uid) }}"
-                                            data-category="{{ strtolower($item->category) }}"
+                                            data-name="{{ strtolower($item->name ?? '') }}"
+                                            data-rfid="{{ strtolower($item->rfid_uid ?? '') }}"
+                                            data-category="{{ strtolower($item->category ?? '') }}"
                                             data-status="{{ $item->status }}"
                                         >
                                             {{-- Judul Buku --}}
@@ -194,7 +194,7 @@
                                                     </span>
                                                     <div class="min-w-0 flex-1">
                                                         <p class="font-semibold text-foreground truncate" title="{{ $item->name }}">{{ $item->name }}</p>
-                                                        <p class="text-xs text-muted-foreground">Diubah {{ $item->updated_at->translatedFormat('d M Y, H:i') }}</p>
+                                                        <p class="text-xs text-muted-foreground">Diubah {{ $item->updated_at ? $item->updated_at->translatedFormat('d M Y, H:i') : '-' }}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -259,7 +259,7 @@
 
                                                     <div
                                                         id="action-menu-desktop-{{ $item->id }}"
-                                                        class="action-menu absolute right-0 z-20 mt-2 hidden w-36 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+                                                        class="action-menu absolute right-0 z-50 hidden w-36 rounded-xl border border-border bg-card shadow-xl"
                                                     >
                                                         <button
                                                             type="button"
@@ -301,9 +301,9 @@
                         @foreach ($items as $item)
                             <div
                                 class="item-row flex flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors gap-3"
-                                data-name="{{ strtolower($item->name) }}"
-                                data-rfid="{{ strtolower($item->rfid_uid) }}"
-                                data-category="{{ strtolower($item->category) }}"
+                                data-name="{{ strtolower($item->name ?? '') }}"
+                                data-rfid="{{ strtolower($item->rfid_uid ?? '') }}"
+                                data-category="{{ strtolower($item->category ?? '') }}"
                                 data-status="{{ $item->status }}"
                             >
                                 <div class="flex items-start justify-between gap-3">
@@ -318,7 +318,7 @@
                                         <div class="min-w-0">
                                             <p class="truncate font-semibold text-foreground leading-tight">{{ $item->name }}</p>
                                             <p class="text-xs text-muted-foreground mt-0.5">
-                                                {{ $categoryLabels[$item->category] ?? 'Buku Paket' }} • {{ $item->updated_at->translatedFormat('d M Y') }}
+                                                {{ $categoryLabels[$item->category] ?? 'Buku Paket' }} • {{ $item->updated_at ? $item->updated_at->translatedFormat('d M Y') : '-' }}
                                             </p>
                                         </div>
                                     </div>
@@ -402,6 +402,13 @@
                         @endforeach
                     </div>
 
+                    {{-- ============ PAGINATION LINKS ============ --}}
+                    @if (method_exists($items, 'links'))
+                        <div class="mt-6">
+                            {{ $items->links() }}
+                        </div>
+                    @endif
+
                     {{-- Pesan kalau hasil filter/pencarian kosong --}}
                     <p id="no-results-message" class="mt-6 hidden text-center text-sm text-muted-foreground">
                         Gak ada buku yang cocok sama pencarian atau filter kamu.
@@ -436,9 +443,11 @@
                         placeholder="Contoh: Matematika Kelas X"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                    @error('name')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'add')
+                        @error('name')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -447,13 +456,15 @@
                         name="category"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="paket" @selected(old('category') === 'paket')>Buku Paket</option>
-                        <option value="tulis" @selected(old('category') === 'tulis')>Buku Tulis</option>
-                        <option value="lks" @selected(old('category') === 'lks')>Buku LKS</option>
+                        <option value="paket" @selected(old('_form') === 'add' && old('category') === 'paket')>Buku Paket</option>
+                        <option value="tulis" @selected(old('_form') === 'add' && old('category') === 'tulis')>Buku Tulis</option>
+                        <option value="lks" @selected(old('_form') === 'add' && old('category') === 'lks')>Buku LKS</option>
                     </select>
-                    @error('category')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'add')
+                        @error('category')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -476,9 +487,11 @@
                         </button>
                     </div>
                     <p id="scan-now-status" class="mt-1.5 text-xs text-muted-foreground"></p>
-                    @error('rfid_uid')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'add')
+                        @error('rfid_uid')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -491,9 +504,11 @@
                         placeholder="Contoh: 10"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                    @error('quantity')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'add')
+                        @error('quantity')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -504,9 +519,11 @@
                         placeholder="Catatan tambahan (opsional)"
                         class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >{{ old('_form') === 'add' ? old('description') : '' }}</textarea>
-                    @error('description')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'add')
+                        @error('description')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -515,12 +532,14 @@
                         name="status"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="active" @selected(old('status') !== 'archived')>Aktif</option>
-                        <option value="archived" @selected(old('status') === 'archived')>Diarsipkan</option>
+                        <option value="active" @selected(old('_form') === 'add' ? old('status') !== 'archived' : true)>Aktif</option>
+                        <option value="archived" @selected(old('_form') === 'add' && old('status') === 'archived')>Diarsipkan</option>
                     </select>
-                    @error('status')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'add')
+                        @error('status')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div class="mt-2 flex items-center gap-3">
@@ -554,10 +573,16 @@
                 </button>
             </div>
 
-            <form id="edit-item-form" method="POST" action="" class="mt-6 flex flex-col gap-5">
+            <form 
+                id="edit-item-form" 
+                method="POST" 
+                action="{{ old('_form') === 'edit' && old('item_id') ? route('items.update', old('item_id')) : '' }}" 
+                class="mt-6 flex flex-col gap-5"
+            >
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_form" value="edit">
+                <input type="hidden" name="item_id" id="edit-item-id" value="{{ old('_form') === 'edit' ? old('item_id') : '' }}">
 
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-foreground">Judul Buku / Mata Pelajaran</label>
@@ -565,11 +590,14 @@
                         type="text"
                         name="name"
                         id="edit-name"
+                        value="{{ old('_form') === 'edit' ? old('name') : '' }}"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                    @error('name')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'edit')
+                        @error('name')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -579,26 +607,41 @@
                         id="edit-category"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="paket">Buku Paket</option>
-                        <option value="tulis">Buku Tulis</option>
-                        <option value="lks">Buku LKS</option>
+                        <option value="paket" @selected(old('_form') === 'edit' && old('category') === 'paket')>Buku Paket</option>
+                        <option value="tulis" @selected(old('_form') === 'edit' && old('category') === 'tulis')>Buku Tulis</option>
+                        <option value="lks" @selected(old('_form') === 'edit' && old('category') === 'lks')>Buku LKS</option>
                     </select>
-                    @error('category')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'edit')
+                        @error('category')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-foreground">UID RFID</label>
-                    <input
-                        type="text"
-                        name="rfid_uid"
-                        id="edit-rfid_uid"
-                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 font-mono text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                    >
-                    @error('rfid_uid')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            name="rfid_uid"
+                            id="edit-rfid_uid"
+                            value="{{ old('_form') === 'edit' ? old('rfid_uid') : '' }}"
+                            class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 font-mono text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                        >
+                        <button
+                            type="button"
+                            id="edit-scan-now-btn"
+                            class="shrink-0 whitespace-nowrap rounded-xl border border-primary bg-primary/5 px-3.5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                        >
+                            Scan Sekarang
+                        </button>
+                    </div>
+                    <p id="edit-scan-now-status" class="mt-1.5 text-xs text-muted-foreground"></p>
+                    @if (old('_form') === 'edit')
+                        @error('rfid_uid')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -608,11 +651,14 @@
                         name="quantity"
                         id="edit-quantity"
                         min="0"
+                        value="{{ old('_form') === 'edit' ? old('quantity') : '' }}"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                    @error('quantity')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'edit')
+                        @error('quantity')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -622,10 +668,12 @@
                         id="edit-description"
                         rows="3"
                         class="block w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
-                    ></textarea>
-                    @error('description')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    >{{ old('_form') === 'edit' ? old('description') : '' }}</textarea>
+                    @if (old('_form') === 'edit')
+                        @error('description')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div>
@@ -635,12 +683,14 @@
                         id="edit-status"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="active">Aktif</option>
-                        <option value="archived">Diarsipkan</option>
+                        <option value="active" @selected(old('_form') === 'edit' && old('status') === 'active')>Aktif</option>
+                        <option value="archived" @selected(old('_form') === 'edit' && old('status') === 'archived')>Diarsipkan</option>
                     </select>
-                    @error('status')
-                        <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                    @enderror
+                    @if (old('_form') === 'edit')
+                        @error('status')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
                 </div>
 
                 <div class="mt-2 flex items-center gap-3">
@@ -699,6 +749,7 @@
     <script>
         function openModal(id) {
             const modal = document.getElementById(id);
+            if (!modal) return;
             const panel = modal.querySelector('.modal-panel');
 
             modal.classList.remove('hidden');
@@ -714,6 +765,7 @@
 
         function closeModal(id) {
             const modal = document.getElementById(id);
+            if (!modal) return;
             const panel = modal.querySelector('.modal-panel');
 
             if (panel) {
@@ -728,13 +780,15 @@
         }
 
         function openEditModal(button) {
-            document.getElementById('edit-name').value = button.dataset.name;
+            document.getElementById('edit-item-id').value = button.dataset.id || '';
+            document.getElementById('edit-name').value = button.dataset.name || '';
             document.getElementById('edit-category').value = button.dataset.category || 'paket';
-            document.getElementById('edit-rfid_uid').value = button.dataset.rfid;
-            document.getElementById('edit-quantity').value = button.dataset.quantity;
-            document.getElementById('edit-description').value = button.dataset.description;
-            document.getElementById('edit-status').value = button.dataset.status;
+            document.getElementById('edit-rfid_uid').value = button.dataset.rfid || '';
+            document.getElementById('edit-quantity').value = button.dataset.quantity || 1;
+            document.getElementById('edit-description').value = button.dataset.description || '';
+            document.getElementById('edit-status').value = button.dataset.status || 'active';
             document.getElementById('edit-item-form').action = '/items/' + button.dataset.id;
+            
             closeAllActionMenus();
             openModal('edit-item-modal');
         }
@@ -750,6 +804,7 @@
         function toggleActionMenu(event, id) {
             event.stopPropagation();
             const menu = document.getElementById(id);
+            if (!menu) return;
             const isOpen = !menu.classList.contains('hidden');
             closeAllActionMenus();
             if (!isOpen) {
@@ -775,9 +830,14 @@
             let visibleCount = 0;
 
             rows.forEach(function (row) {
-                const matchesSearch = row.dataset.name.includes(search) || row.dataset.rfid.includes(search);
-                const matchesCategory = category === '' || row.dataset.category === category;
-                const matchesStatus = status === '' || row.dataset.status === status;
+                const name = row.dataset.name || '';
+                const rfid = row.dataset.rfid || '';
+                const rowCategory = row.dataset.category || '';
+                const rowStatus = row.dataset.status || '';
+
+                const matchesSearch = name.includes(search) || rfid.includes(search);
+                const matchesCategory = category === '' || rowCategory === category;
+                const matchesStatus = status === '' || rowStatus === status;
 
                 if (matchesSearch && matchesCategory && matchesStatus) {
                     row.classList.remove('hidden');
@@ -800,55 +860,68 @@
             });
         }
     </script>
+
+    {{-- Script Scan RFID (Support Modal Tambah & Edit) --}}
     <script>
-    (function () {
-        const btn = document.getElementById('scan-now-btn');
-        const input = document.getElementById('add-rfid_uid');
-        const status = document.getElementById('scan-now-status');
-        if (!btn || !input) return;
+        (function () {
+            function setupRfidScanner(btnId, inputId, statusId) {
+                const btn = document.getElementById(btnId);
+                const input = document.getElementById(inputId);
+                const status = document.getElementById(statusId);
+                if (!btn || !input || !status) return;
 
-        let polling = null;
+                let polling = null;
 
-        btn.addEventListener('click', function () {
-            if (polling) return;
+                btn.addEventListener('click', function () {
+                    if (polling) return;
 
-            const startedAt = new Date().toISOString();
-            let secondsLeft = 15;
+                    const startedAt = new Date().toISOString();
+                    let secondsLeft = 15;
 
-            btn.disabled = true;
-            status.textContent = 'Nempelin kartu ke alat... (' + secondsLeft + 's)';
-            status.classList.remove('text-destructive');
+                    btn.disabled = true;
+                    status.textContent = 'Nempelin kartu ke alat... (' + secondsLeft + 's)';
+                    status.classList.remove('text-destructive');
 
-            polling = setInterval(function () {
-                secondsLeft--;
+                    polling = setInterval(function () {
+                        secondsLeft--;
 
-                fetch('/items/scan-poll?since=' + encodeURIComponent(startedAt))
-                    .then(function (res) { return res.json(); })
-                    .then(function (data) {
-                        if (data.found) {
-                            input.value = data.uid;
-                            status.textContent = 'Kartu terbaca: ' + data.uid;
-                            stopPolling();
-                            return;
-                        }
+                        fetch('/items/scan-poll?since=' + encodeURIComponent(startedAt))
+                            .then(function (res) { return res.json(); })
+                            .then(function (data) {
+                                if (data.found) {
+                                    input.value = data.uid;
+                                    status.textContent = 'Kartu terbaca: ' + data.uid;
+                                    stopPolling();
+                                    return;
+                                }
 
-                        if (secondsLeft <= 0) {
-                            status.textContent = 'Gak ada kartu kebaca. Coba lagi.';
-                            status.classList.add('text-destructive');
-                            stopPolling();
-                            return;
-                        }
+                                if (secondsLeft <= 0) {
+                                    status.textContent = 'Gak ada kartu kebaca. Coba lagi.';
+                                    status.classList.add('text-destructive');
+                                    stopPolling();
+                                    return;
+                                }
 
-                        status.textContent = 'Nempelin kartu ke alat... (' + secondsLeft + 's)';
-                    });
-            }, 1500);
-        });
+                                status.textContent = 'Nempelin kartu ke alat... (' + secondsLeft + 's)';
+                            })
+                            .catch(function () {
+                                status.textContent = 'Gagal terhubung ke server.';
+                                status.classList.add('text-destructive');
+                                stopPolling();
+                            });
+                    }, 1500);
+                });
 
-        function stopPolling() {
-            clearInterval(polling);
-            polling = null;
-            btn.disabled = false;
-        }
-    })();
-</script>
+                function stopPolling() {
+                    clearInterval(polling);
+                    polling = null;
+                    btn.disabled = false;
+                }
+            }
+
+            // Inisialisasi untuk Modal Tambah & Edit
+            setupRfidScanner('scan-now-btn', 'add-rfid_uid', 'scan-now-status');
+            setupRfidScanner('edit-scan-now-btn', 'edit-rfid_uid', 'edit-scan-now-status');
+        })();
+    </script>
 </x-layouts.dashboard>
