@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule; // <-- Tambahkan baris ini
+use Illuminate\Validation\Rule;
 
 class StoreItemRequest extends FormRequest
 {
@@ -16,8 +16,9 @@ class StoreItemRequest extends FormRequest
     {
         return [
             'name'        => 'required|max:255',
-            'category'    => ['required', 'string', Rule::in(['paket', 'tulis', 'lks', 'elektronik', 'olahraga'])],
-            'rfid_uid' => 'nullable|string|max:255|unique:items,rfid_uid',
+            // Sesuaikan rule::in dengan value yang ada di option select form (huruf kecil)
+            'category'    => ['required', 'string', Rule::in(['laptop', 'casan', 'tulis', 'paket'])],
+            'rfid_uid'    => 'nullable|string|max:255|unique:items,rfid_uid',
             'quantity'    => 'required|integer|min:0',
             'description' => 'nullable|max:500',
             'status'      => ['required', Rule::in(['active', 'archived'])],
