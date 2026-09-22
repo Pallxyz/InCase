@@ -12,6 +12,7 @@ use App\Http\Controllers\Teacher\RoomChangeController;
 use App\Http\Controllers\HolidayController;
 
 use App\Http\Controllers\Student\ItemController;
+use App\Http\Controllers\Student\ItemResolutionController;
 use App\Http\Controllers\Student\ScanHistoryController;
 use App\Http\Controllers\Student\ScheduleController;
 
@@ -30,6 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:student')->group(function () {
 
         Route::resource('items', ItemController::class);
+
+    // Barang belum kembali saat cek pulang: dikumpulkan / hilang (butuh confirmed=1)
+    Route::post('/items/{item}/resolve', [ItemResolutionController::class, 'store'])
+        ->name('items.resolve');
 
         Route::get('/scan-history', [ScanHistoryController::class, 'index'])
             ->name('scan-history.index');

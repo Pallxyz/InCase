@@ -6,6 +6,8 @@ use App\Models\Holiday;
 use App\Models\Item;
 use App\Models\ScanLog;
 use App\Models\Subject;
+use App\Services\ReturnCheckService;
+use App\Services\SchoolDayResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -57,7 +59,8 @@ class DashboardController extends Controller
 
             $todayScans = ScanLog::with('item')
                 ->where('user_id', $user->id)
-                ->whereDate('scanned_at', today())
+                ->where('phase', 'packing')          // scan persiapan (bukan scan cek pulang)
+                ->whereDate('for_date', today())     // untuk hari sekolah ini (termasuk scan semalam)
                 ->latest('scanned_at')
                 ->get();
 
@@ -106,8 +109,17 @@ class DashboardController extends Controller
                 ? round(($packedCount / $totalItems) * 100)
                 : 0;
 
+            // Cek pulang: barang yang dibawa pagi tapi belum kembali ke tas.
+            $returnCheckOpen = app(SchoolDayResolver::class)->returnCheckOpen($user, now());
+            $returns = app(ReturnCheckService::class);
+            $notReturned = $returnCheckOpen ? $returns->unreturned($user, today()) : collect();
+            $resolutions = $returnCheckOpen ? $returns->resolutions($user, today()) : collect();
+
             return view('dashboard.index', [
                 'role' => 'student',
+                'returnCheckOpen' => $returnCheckOpen,
+                'notReturned' => $notReturned,
+                'resolutions' => $resolutions,
                 'user' => $user,
                 'todaySubjects' => $todaySubjects,
                 'items' => $items,

@@ -4,15 +4,24 @@ namespace App\Services;
 
 use App\Models\Holiday;
 use App\Models\Item;
+use App\Models\ItemResolution;
 use App\Models\ScanLog;
-use App\Models\Subject;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class ScanService
 {
+    public function __construct(
+        private SchoolDayResolver $days,
+        private ReturnCheckService $returns,
+    ) {}
+
     /**
      * Proses 1 scan RFID. Return array ['code' => int, 'body' => array]
      * biar bisa dipake baik dari HTTP controller maupun listener MQTT.
+     *
+     * status di body tetap 'unknown' | 'success' | 'complete' | 'missing'
+     * (alat scan tidak perlu diubah). Tambahan: 'phase' ('packing'|'return') dan 'for_date'.
      */
     public function handle(string $rfidUid): array
     {
@@ -34,81 +43,124 @@ class ScanService
         }
 
         $student = $item->user;
+        $now = now();
+        $context = $this->days->resolve($student, $now);
 
         ScanLog::create([
             'user_id' => $student->id,
             'item_id' => $item->id,
             'status' => 'success',
-            'scanned_at' => now(),
+            'phase' => $context['phase'],
+            'for_date' => $context['date']->toDateString(),
+            'scanned_at' => $now,
         ]);
 
-        $now = now();
+        return match ($context['phase']) {
+            'return' => $this->handleReturn($student, $item, $context),
+            'packing' => $this->handlePacking($student, $item, $context),
+            default => $this->handleIdle($student, $item, $now),
+        };
+    }
 
-        // Hari libur: scan tetap dicatat, tapi tidak dicocokkan dengan pelajaran.
-        // status tetap 'success' supaya alat scan (ESP) tidak perlu diubah.
+    /** Hari libur / tanpa jadwal: scan dicatat, tidak dicocokkan dengan pelajaran. */
+    private function handleIdle(User $student, Item $item, $now): array
+    {
         $holiday = Holiday::findFor($student->school_name, $student->class_id, $now);
 
+        $body = [
+            'status' => 'success',
+            'item' => $item->name,
+            'message' => "{$item->name} berhasil dipindai.",
+        ];
+
         if ($holiday) {
-            return [
-                'code' => 200,
-                'body' => [
-                    'status' => 'success',
-                    'item' => $item->name,
-                    'holiday' => $holiday->name,
-                    'message' => "{$item->name} berhasil dipindai. Hari ini libur: {$holiday->name}.",
-                ],
-            ];
+            $body['holiday'] = $holiday->name;
+            $body['message'] = "{$item->name} berhasil dipindai. Hari ini libur: {$holiday->name}.";
         }
 
-        $subject = Subject::with('requiredItems')
-            ->inActiveYear()
-            ->where('class_id', $student->class_id)
-            ->where('day', $now->englishDayOfWeek)
-            ->where('is_active', true)
-            ->whereTime('start_time', '<=', $now->format('H:i'))
-            ->whereTime('end_time', '>=', $now->format('H:i'))
-            ->first();
+        return ['code' => 200, 'body' => $body];
+    }
 
-        if (! $subject) {
-            return [
-                'code' => 200,
-                'body' => [
-                    'status' => 'success',
-                    'item' => $item->name,
-                    'message' => "{$item->name} berhasil dipindai.",
-                ],
-            ];
-        }
+    /** Persiapan: cocokkan dengan barang wajib SEMUA pelajaran di hari sekolah yang dituju. */
+    private function handlePacking(User $student, Item $item, array $context): array
+    {
+        $date = $context['date'];
 
-        $scannedNamesToday = ScanLog::where('scan_logs.user_id', $student->id)
+        $scannedNames = ScanLog::where('scan_logs.user_id', $student->id)
             ->where('scan_logs.status', 'success')
-            ->whereDate('scan_logs.scanned_at', today())
+            ->where('scan_logs.phase', 'packing')
+            ->whereDate('scan_logs.for_date', $date)
             ->join('items', 'items.id', '=', 'scan_logs.item_id')
             ->pluck('items.name')
-            ->map(fn(string $name) => Str::lower(trim($name)));
+            ->map(fn (string $name) => Str::lower(trim($name)));
 
-        $missingOriginalNames = $subject->requiredItems->pluck('name')
-            ->filter(fn(string $name) => ! $scannedNamesToday->contains(Str::lower(trim($name))));
+        $required = $context['subjects']
+            ->flatMap(fn ($subject) => $subject->requiredItems->pluck('name'))
+            ->map(fn ($name) => trim($name))
+            ->filter()
+            ->unique(fn ($name) => Str::lower($name))
+            ->values();
 
-        if ($missingOriginalNames->isEmpty()) {
-            return [
-                'code' => 200,
-                'body' => [
-                    'status' => 'complete',
-                    'subject' => $subject->name,
-                    'message' => "Semua barang wajib buat {$subject->name} sudah lengkap.",
-                ],
-            ];
+        $missing = $required->reject(fn (string $name) => $scannedNames->contains(Str::lower($name)))->values();
+
+        $base = [
+            'phase' => 'packing',
+            'for_date' => $date->toDateString(),
+            'subject' => $context['subjects']->pluck('name')->unique()->implode(', '),
+        ];
+
+        if ($missing->isEmpty()) {
+            return ['code' => 200, 'body' => $base + [
+                'status' => 'complete',
+                'message' => "Semua barang wajib {$this->dayLabel($date)} sudah lengkap.",
+            ]];
         }
 
-        return [
-            'code' => 200,
-            'body' => [
-                'status' => 'missing',
-                'subject' => $subject->name,
-                'missing_items' => $missingOriginalNames->values(),
-                'message' => 'Barang berikut belum dipindai: ' . $missingOriginalNames->implode(', '),
-            ],
-        ];
+        return ['code' => 200, 'body' => $base + [
+            'status' => 'missing',
+            'missing_items' => $missing,
+            'message' => 'Barang berikut belum dipindai: ' . $missing->implode(', '),
+        ]];
+    }
+
+    /** Cek pulang: barang yang dibawa pagi harus kembali ke tas. */
+    private function handleReturn(User $student, Item $item, array $context): array
+    {
+        $date = $context['date'];
+
+        // Barang yang tadi dicatat "dikumpulkan/hilang" ternyata ketemu lagi -> catatannya dihapus.
+        ItemResolution::where('user_id', $student->id)
+            ->where('item_id', $item->id)
+            ->whereDate('date', $date)
+            ->delete();
+
+        // (delete() di atas cukup: dipakai whereDate, bukan '==', supaya aman
+        // lintas database walau kolomnya bertipe date.)
+
+        $pending = $this->returns->pending($student, $date);
+
+        $base = ['phase' => 'return', 'for_date' => $date->toDateString()];
+
+        if ($pending->isEmpty()) {
+            return ['code' => 200, 'body' => $base + [
+                'status' => 'complete',
+                'message' => 'Semua barang sudah kembali ke tas. Aman untuk pulang!',
+            ]];
+        }
+
+        return ['code' => 200, 'body' => $base + [
+            'status' => 'missing',
+            'missing_items' => $pending->pluck('name')->values(),
+            'message' => 'Barang belum kembali: ' . $pending->pluck('name')->implode(', '),
+        ]];
+    }
+
+    private function dayLabel($date): string
+    {
+        return match (true) {
+            $date->isToday() => 'hari ini',
+            $date->isTomorrow() => 'besok',
+            default => 'tanggal ' . $date->format('d/m/Y'),
+        };
     }
 }

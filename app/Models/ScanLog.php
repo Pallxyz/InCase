@@ -11,11 +11,14 @@ class ScanLog extends Model
         'user_id',
         'item_id',
         'status',
+        'phase',
+        'for_date',
         'scanned_at',
     ];
 
     protected $casts = [
         'scanned_at' => 'datetime',
+        'for_date' => 'date',
     ];
 
     /**
