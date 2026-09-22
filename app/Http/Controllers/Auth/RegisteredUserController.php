@@ -22,7 +22,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        $classes = SchoolClass::orderBy('grade')->orderBy('major')
+        $classes = SchoolClass::where('major', 'PPLG')
+            ->orderBy('grade')
+            ->orderBy('name')
             ->get(['id', 'name', 'grade', 'school_name']);
 
         $schools = School::all(['name', 'type']);
@@ -39,14 +41,14 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'role' => ['required', 'in:student,teacher'],
             'school_name' => ['required', 'string', 'max:255'],
             'days_per_week' => ['required', 'in:5,6'],
             'school_type' => ['nullable', 'in:SMK,SMA,SMP'],
             'class_id' => ['required_if:role,student', 'nullable', 'exists:school_classes,id'],
             'new_class_grade' => ['nullable', 'string', 'max:50'],
-            'new_class_name' => ['nullable', 'string', 'max:255'],
+            'new_class_name' => ['nullable', 'in:RPL 1,RPL 2'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
