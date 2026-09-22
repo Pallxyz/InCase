@@ -9,6 +9,7 @@ use App\Http\Controllers\Teacher\AcademicYearController;
 
 use App\Http\Controllers\Teacher\SubjectController;
 use App\Http\Controllers\Teacher\RoomChangeController;
+use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\HolidayController;
 
 use App\Http\Controllers\Student\ItemController;
@@ -58,6 +59,10 @@ Route::middleware('auth')->group(function () {
 
         Route::post('academic-years/{academicYear}/copy-schedules', [AcademicYearController::class, 'copySchedules'])
             ->name('academic-years.copy-schedules');
+
+        Route::get('teachers', [TeacherController::class, 'index'])->name('teachers.index');
+        Route::post('teachers', [TeacherController::class, 'store'])->name('teachers.store');
+        Route::delete('teachers/{teacher}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
 
         Route::get('academic-years/{academicYear}/export', [AcademicYearController::class, 'export'])
             ->name('academic-years.export');
