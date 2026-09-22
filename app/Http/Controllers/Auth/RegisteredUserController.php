@@ -42,7 +42,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'role' => ['required', 'in:student,teacher'],
+            // 'role' => ['required', 'in:student,teacher'],
             'school_name' => ['required', 'string', 'max:255'],
             'days_per_week' => ['required', 'in:5,6'],
             'school_type' => ['nullable', 'in:SMK,SMA,SMP'],
@@ -66,17 +66,15 @@ class RegisteredUserController extends Controller
         $classId = null;
 
         // Guru gak butuh class_id sama sekali. Cuma murid yang perlu kelas.
-        if ($request->role === 'student') {
-            if ($request->filled('class_id')) {
-                $classId = $request->integer('class_id');
-            } else {
-                $class = SchoolClass::firstOrCreate(
-                    ['name' => $request->new_class_name, 'school_name' => $school->name],
-                    ['grade' => $request->new_class_grade, 'major' => $request->new_class_name]
-                );
+        if ($request->filled('class_id')) {
+            $classId = $request->integer('class_id');
+        } else {
+            $class = SchoolClass::firstOrCreate(
+                ['name' => $request->new_class_name, 'school_name' => $school->name],
+                ['grade' => $request->new_class_grade, 'major' => $request->new_class_name]
+            );
 
-                $classId = $class->id;
-            }
+            $classId = $class->id;
         }
 
         $user = User::create([
@@ -84,7 +82,7 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'school_name' => $school->name,
             'class_id' => $classId,
-            'role' => $request->role,
+            'role' => 'student', // hardcode, gak dari input form
             'password' => Hash::make($request->password),
         ]);
 

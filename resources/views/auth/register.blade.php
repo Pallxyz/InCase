@@ -20,6 +20,8 @@
 
         <form method="POST" action="{{ route('register') }}" class="mt-8 flex flex-col gap-5">
             @csrf
+            <input type="hidden" name="role" value="student">
+
 
             {{-- Peran --}}
             {{-- <div>
@@ -156,8 +158,7 @@
                             @enderror
                         </div>
                         <div>
-                            <label for="new_class_name_fresh"
-                                class="mb-1.5 block text-xs font-medium text-foreground">
+                            <label for="new_class_name_fresh" class="mb-1.5 block text-xs font-medium text-foreground">
                                 Jurusan
                             </label>
                             <select name="new_class_name" id="new_class_name_fresh"
@@ -250,24 +251,6 @@
             SMK: ['X', 'XI', 'XII'],
         };
 
-        const roleStudent = document.getElementById('role-student');
-        const roleTeacher = document.getElementById('role-teacher');
-        const classSectionWrapper = document.getElementById('class-section-wrapper');
-
-        function toggleClassSection() {
-            const isTeacher = roleTeacher.checked;
-            classSectionWrapper.style.display = isTeacher ? 'none' : '';
-
-            // Kalau guru, hapus wajib-isi di field kelas biar gak nyangkut validasi browser.
-            document.getElementById('class-select').required = false;
-            document.getElementById('new_class_grade').required = false;
-            document.getElementById('new_class_name_fresh').required = false;
-        }
-
-        roleStudent.addEventListener('change', toggleClassSection);
-        roleTeacher.addEventListener('change', toggleClassSection);
-        toggleClassSection();
-
         const schoolInput = document.querySelector('input[name="school_name"]');
         const gradeSelect = document.getElementById('grade-select');
         const classSelect = document.getElementById('class-select');
@@ -308,16 +291,6 @@
         }
 
         function populateGrades() {
-            // Kalau Guru, jangan pernah nyentuh field kelas sama sekali.
-            if (roleTeacher.checked) {
-                classSectionWrapper.style.display = 'none';
-                classSelect.required = false;
-                newGradeFresh.required = false;
-                newNameFresh.required = false;
-                return;
-            }
-
-            // Reset dulu semua kondisi setiap kali sekolah diketik ulang.
             newClassInline.classList.add('hidden');
             newNameInline.required = false;
             classSelect.name = 'class_id';
@@ -371,8 +344,7 @@
                 return '<option value="' + c.id + '">' + c.label + '</option>';
             }).join('');
 
-            classSelect.innerHTML = '<option value="" disabled selected>Pilih kelas</option>' +
-                options +
+            classSelect.innerHTML = '<option value="" disabled selected>Pilih kelas</option>' + options;
 
             newClassInline.classList.add('hidden');
             newNameInline.required = false;
