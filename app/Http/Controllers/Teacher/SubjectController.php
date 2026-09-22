@@ -20,19 +20,19 @@ class SubjectController extends Controller
      * Display teacher schedules.
      */
     public function index(): View
-{
-    /** @var User $user */
-    $user = User::findOrFail(Auth::id());
+    {
+        /** @var User $user */
+        $user = User::findOrFail(Auth::id());
 
-    $subjects = Subject::with([
-        'teacher',
-        'schoolClass',
-        'requiredItems',
-    ])
-        ->where('teacher_id', $user->id)
-        ->where('is_active', true)
-        ->inActiveYear()
-        ->orderByRaw("
+        $subjects = Subject::with([
+            'teacher',
+            'schoolClass',
+            'requiredItems',
+        ])
+            ->where('teacher_id', $user->id)
+            ->where('is_active', true)
+            ->inActiveYear()
+            ->orderByRaw("
             FIELD(day,
                 'Monday',
                 'Tuesday',
@@ -42,23 +42,24 @@ class SubjectController extends Controller
                 'Saturday'
             )
         ")
-        ->orderBy('start_time')
-        ->get();
+            ->orderBy('start_time')
+            ->get();
 
-    $school = \App\Models\School::where('name', $user->school_name)->first();
-    $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $school = \App\Models\School::where('name', $user->school_name)->first();
+        $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    $classes = SchoolClass::where('school_name', $user->school_name)
-        ->orderBy('grade')
-        ->orderBy('major')
-        ->get();
+        $classes = SchoolClass::where('school_name', $user->school_name)
+            ->where('major', 'PPLG')
+            ->orderBy('grade')
+            ->orderBy('major')
+            ->get();
 
-    return view('schedules.index', compact(
-        'subjects',
-        'classes',
-        'schoolDayNames'
-    ));
-}
+        return view('schedules.index', compact(
+            'subjects',
+            'classes',
+            'schoolDayNames'
+        ));
+    }
 
     /**
      * Not used because application uses modal.
@@ -72,33 +73,33 @@ class SubjectController extends Controller
      * Store new subject.
      */
     public function store(
-    StoreSubjectRequest $request
-): RedirectResponse {
+        StoreSubjectRequest $request
+    ): RedirectResponse {
 
-    /** @var User $user */
-    $user = User::findOrFail(Auth::id());
+        /** @var User $user */
+        $user = User::findOrFail(Auth::id());
 
-    $activeYear = \App\Models\AcademicYear::active();
+        $activeYear = \App\Models\AcademicYear::active();
 
-    abort_if(
-        !$activeYear,
-        422,
-        'Belum ada tahun ajaran aktif. Hubungi admin sekolah.'
-    );
+        abort_if(
+            !$activeYear,
+            422,
+            'Belum ada tahun ajaran aktif. Hubungi admin sekolah.'
+        );
 
-    $data = $request->safe()->except('required_items');
+        $data = $request->safe()->except('required_items');
 
-    $data['teacher_id'] = $user->id;
-    $data['academic_year_id'] = $activeYear->id;
+        $data['teacher_id'] = $user->id;
+        $data['academic_year_id'] = $activeYear->id;
 
-    $subject = Subject::create($data);
+        $subject = Subject::create($data);
 
-    $this->syncRequiredItems($subject, $request->input('required_items'));
+        $this->syncRequiredItems($subject, $request->input('required_items'));
 
-    return redirect()
-        ->route('subjects.index')
-        ->with('success', 'Schedule created successfully.');
-}
+        return redirect()
+            ->route('subjects.index')
+            ->with('success', 'Schedule created successfully.');
+    }
 
     /**
      * Display one schedule.

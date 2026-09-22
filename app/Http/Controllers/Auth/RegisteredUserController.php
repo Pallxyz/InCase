@@ -26,7 +26,13 @@ class RegisteredUserController extends Controller
 {
     public function create(): View
     {
+<<<<<<< HEAD
         $classes = SchoolClass::orderBy('grade')->orderBy('name')
+=======
+        $classes = SchoolClass::where('major', 'PPLG')
+            ->orderBy('grade')
+            ->orderBy('name')
+>>>>>>> 41d2fe1772c31e0c6db946d7a657f9b13d873853
             ->get(['id', 'name', 'grade', 'school_name']);
 
         $schools = School::all(['name', 'type']);
@@ -41,9 +47,20 @@ class RegisteredUserController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+<<<<<<< HEAD
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             // Publik hanya boleh daftar sebagai siswa. Guru dibuatkan admin.
             'class_id' => ['required', 'integer', 'exists:school_classes,id'],
+=======
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'role' => ['required', 'in:student,teacher'],
+            'school_name' => ['required', 'string', 'max:255'],
+            'days_per_week' => ['required', 'in:5,6'],
+            'school_type' => ['nullable', 'in:SMK,SMA,SMP'],
+            'class_id' => ['required_if:role,student', 'nullable', 'exists:school_classes,id'],
+            'new_class_grade' => ['nullable', 'string', 'max:50'],
+            'new_class_name' => ['nullable', 'in:RPL 1,RPL 2'],
+>>>>>>> 41d2fe1772c31e0c6db946d7a657f9b13d873853
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], [
             'class_id.required' => 'Pilih kelasmu.',

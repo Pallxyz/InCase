@@ -21,7 +21,7 @@
 
     $isTeacher = auth()->check() && (auth()->user()->role ?? null) === 'teacher';
     $isStudent = auth()->check() && (auth()->user()->role ?? null) === 'student';
-    $canAddSchedule = $isTeacher || $isStudent;
+    $canAddSchedule = $isTeacher;
 
     $totalJadwal = $subjects->count();
     $totalMataPelajaran = $subjects->pluck('name')->unique()->count();
