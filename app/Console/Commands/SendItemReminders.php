@@ -2,76 +2,54 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Holiday;
-use App\Models\ScanLog;
-use App\Models\Subject;
 use App\Models\User;
-use App\Notifications\ItemReminderNotification;
+use App\Notifications\DailyPackingReminderNotification;
+use App\Services\PackingChecklistService;
+use App\Services\SchoolDayResolver;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 class SendItemReminders extends Command
 {
     protected $signature = 'incase:send-item-reminders';
-    protected $description = 'Kirim reminder barang yang belum discan, 30 menit sebelum jadwal mulai';
+
+    protected $description = 'Kirim pengingat "siapkan barangmu", dijadwalkan pagi & malam sebelum berangkat';
+
+    public function __construct(
+        private SchoolDayResolver $days,
+        private PackingChecklistService $checklist,
+    ) {
+        parent::__construct();
+    }
 
     public function handle(): void
     {
         $now = now();
-        $windowEnd = $now->copy()->addMinutes(30)->format('H:i');
 
-        $subjects = Subject::with('requiredItems')
-            ->inActiveYear()
-            ->where('day', $now->englishDayOfWeek)
-            ->where('is_active', true)
-            ->whereTime('start_time', '>=', $now->format('H:i'))
-            ->whereTime('start_time', '<=', $windowEnd)
-            ->get();
-
-        foreach ($subjects as $subject) {
-            $requiredNames = $subject->requiredItems->pluck('name');
-
-            if ($requiredNames->isEmpty()) {
-                continue;
-            }
-
-            $students = User::where('role', 'student')
-                ->where('class_id', $subject->class_id)
-                ->get();
-
-            foreach ($students as $student) {
-                // Libur sekolah/kelas: jangan kirim pengingat.
-                if (Holiday::findFor($student->school_name, $student->class_id, $now)) {
-                    continue;
+        User::where('role', 'student')
+            ->whereNotNull('class_id')
+            ->chunkById(100, function ($students) use ($now) {
+                foreach ($students as $student) {
+                    $this->remind($student, $now);
                 }
-
-                $missing = $this->missingItemsForStudent($student->id, $requiredNames);
-
-                if ($missing->isNotEmpty()) {
-                    $student->notify(new ItemReminderNotification(
-                        $subject,
-                        $missing
-                    ));
-                }
-            }
-        }
+            });
     }
 
-    /**
-     * Match required item names against the student's own scanned items today
-     * (case-insensitive, per-student — not by global item ID).
-     */
-    private function missingItemsForStudent(int $studentId, \Illuminate\Support\Collection $requiredNames): \Illuminate\Support\Collection
+    private function remind(User $student, $now): void
     {
-        $scannedNamesToday = ScanLog::where('scan_logs.user_id', $studentId)
-            ->where('scan_logs.status', 'success')
-            ->whereDate('scan_logs.scanned_at', today())
-            ->join('items', 'items.id', '=', 'scan_logs.item_id')
-            ->pluck('items.name')
-            ->map(fn (string $name) => Str::lower(trim($name)));
+        // resolve() sudah menangani: hari libur/tanpa jadwal dilewati (fase 'idle'),
+        // dan setelah jam 18:00 otomatis mengincar hari sekolah berikutnya.
+        $context = $this->days->resolve($student, $now);
 
-        return $requiredNames->filter(
-            fn (string $required) => ! $scannedNamesToday->contains(Str::lower(trim($required)))
-        )->values();
+        if ($context['phase'] !== 'packing') {
+            return;
+        }
+
+        $missing = $this->checklist->missingItems($student, $context['date'], $context['subjects']);
+
+        if ($missing->isEmpty()) {
+            return;
+        }
+
+        $student->notify(new DailyPackingReminderNotification($context['date'], $missing));
     }
 }

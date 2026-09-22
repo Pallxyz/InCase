@@ -14,6 +14,7 @@ class ScanService
     public function __construct(
         private SchoolDayResolver $days,
         private ReturnCheckService $returns,
+        private PackingChecklistService $checklist,
     ) {}
 
     /**
@@ -86,22 +87,7 @@ class ScanService
     {
         $date = $context['date'];
 
-        $scannedNames = ScanLog::where('scan_logs.user_id', $student->id)
-            ->where('scan_logs.status', 'success')
-            ->where('scan_logs.phase', 'packing')
-            ->whereDate('scan_logs.for_date', $date)
-            ->join('items', 'items.id', '=', 'scan_logs.item_id')
-            ->pluck('items.name')
-            ->map(fn (string $name) => Str::lower(trim($name)));
-
-        $required = $context['subjects']
-            ->flatMap(fn ($subject) => $subject->requiredItems->pluck('name'))
-            ->map(fn ($name) => trim($name))
-            ->filter()
-            ->unique(fn ($name) => Str::lower($name))
-            ->values();
-
-        $missing = $required->reject(fn (string $name) => $scannedNames->contains(Str::lower($name)))->values();
+        $missing = $this->checklist->missingItems($student, $date, $context['subjects']);
 
         $base = [
             'phase' => 'packing',
