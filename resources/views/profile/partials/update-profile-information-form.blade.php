@@ -11,16 +11,15 @@
     @endif
 
     <div class="flex flex-col items-center gap-4 sm:flex-row">
-        <span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-primary text-3xl font-bold text-primary-foreground">
-            {{ strtoupper(substr($user->name,0,1)) }}
+        <span
+            class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-primary text-3xl font-bold text-primary-foreground">
+            {{ strtoupper(substr($user->name, 0, 1)) }}
         </span>
 
         <div class="flex flex-col items-center sm:items-start">
-            <button
-                type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
-            >
-                <x-icon.camera class="h-4 w-4"/>
+            <button type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-muted">
+                <x-icon.camera class="h-4 w-4" />
                 Ganti Foto
             </button>
         </div>
@@ -44,9 +43,8 @@
 
     <div class="my-6 border-t border-border"></div>
 
-    <form method="POST"
-          action="{{ route('profile.update') }}"
-          class="grid gap-5 sm:grid-cols-2">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data"
+        class="grid gap-5 sm:grid-cols-2">
 
         @csrf
         @method('PATCH')
@@ -56,19 +54,10 @@
                 Nama Lengkap
             </label>
 
-            <x-text-input
-                id="name"
-                name="name"
-                type="text"
-                class="block w-full rounded-xl border-border bg-background"
-                :value="old('name',$user->name)"
-                required
-            />
+            <x-text-input id="name" name="name" type="text"
+                class="block w-full rounded-xl border-border bg-background" :value="old('name', $user->name)" required />
 
-            <x-input-error
-                :messages="$errors->get('name')"
-                class="mt-2"
-            />
+            <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
         <div>
@@ -76,33 +65,19 @@
                 Email
             </label>
 
-            <x-text-input
-                id="email"
-                name="email"
-                type="email"
-                class="block w-full rounded-xl border-border bg-background"
-                :value="old('email',$user->email)"
-                required
-            />
+            <x-text-input id="email" name="email" type="email"
+                class="block w-full rounded-xl border-border bg-background" :value="old('email', $user->email)" required />
 
-            <x-input-error
-                :messages="$errors->get('email')"
-                class="mt-2"
-            />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-
+            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail())
                 <p class="mt-2 text-xs text-warning">
                     Email belum diverifikasi.
 
-                    <button
-                        form="send-verification"
-                        class="font-semibold underline"
-                    >
+                    <button form="send-verification" class="font-semibold underline">
                         Kirim ulang
                     </button>
                 </p>
-
             @endif
         </div>
 
@@ -111,12 +86,8 @@
                 Role
             </label>
 
-            <input
-                type="text"
-                value="{{ ucfirst($role) }}"
-                disabled
-                class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
-            >
+            <input type="text" value="{{ ucfirst($role) }}" disabled
+                class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground">
         </div>
 
         <div>
@@ -124,31 +95,20 @@
                 Kelas
             </label>
 
-            <input
-                type="text"
-                value="{{ $user->schoolClass->name ?? '-' }}"
-                disabled
-                class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
-            >
+            <input type="text" value="{{ $user->schoolClass->name ?? '-' }}" disabled
+                class="block w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground">
         </div>
 
         <div class="sm:col-span-2 flex items-center gap-4 pt-2">
 
-            <button
-                type="submit"
-                class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-            >
+            <button type="submit"
+                class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90">
                 Simpan Perubahan
             </button>
 
-            @if(session('status')==='profile-updated')
-                <span
-                    x-data="{show:true}"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(()=>show=false,2000)"
-                    class="text-sm font-medium text-success"
-                >
+            @if (session('status') === 'profile-updated')
+                <span x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)"
+                    class="text-sm font-medium text-success">
                     Berhasil disimpan.
                 </span>
             @endif
@@ -157,10 +117,21 @@
 
     </form>
 
+    <script>
+        function previewAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const preview = document.getElementById('avatar-preview');
+            const initial = document.getElementById('avatar-initial');
+
+            preview.src = URL.createObjectURL(input.files[0]);
+            preview.classList.remove('hidden');
+            initial.classList.add('hidden');
+        }
+    </script>
+
 </section>
 
-<form id="send-verification"
-      method="POST"
-      action="{{ route('verification.send') }}">
+<form id="send-verification" method="POST" action="{{ route('verification.send') }}">
     @csrf
 </form>
