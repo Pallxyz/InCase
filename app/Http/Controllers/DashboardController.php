@@ -22,7 +22,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Admin belum punya dashboard sendiri (langkah berikutnya),
+        // Admin belum punya dashboard sendiri,
         // sementara diarahkan ke halaman Tahun Ajaran.
         if ($user->role === 'admin') {
             return redirect()->route('academic-years.index');
@@ -68,39 +68,13 @@ class DashboardController extends Controller
                 ->pluck('item_id')
                 ->unique();
 
-            // Barang WAJIB hari ini = gabungan barang wajib semua pelajaran hari ini
-            // (nama yang sama di beberapa pelajaran cuma dihitung sekali).
-            $requiredNames = $todaySubjects
-                ->flatMap(fn ($subject) => $subject->requiredItems->pluck('name'))
-                ->map(fn ($name) => trim($name))
-                ->filter()
-                ->unique(fn ($name) => Str::lower($name))
-                ->values();
-
-            // Barang milik siswa, dikelompokkan per nama (dicocokkan sama seperti ScanService).
-            $myItemsByName = Item::where('user_id', $user->id)
-                ->get()
-                ->groupBy(fn ($item) => Str::lower(trim($item->name)));
-
-            // Satu baris per barang wajib. Kalau siswa punya barangnya, pakai barang itu
-            // (utamakan yang sudah discan hari ini). Kalau belum terdaftar, tetap
-            // ditampilkan sebagai "belum terdeteksi" supaya kelihatan masih kurang.
-            $items = $requiredNames
-                ->map(function ($name) use ($myItemsByName, $scannedItemIds) {
-                    $owned = $myItemsByName->get(Str::lower($name));
-
-                    if (! $owned) {
-                        return new Item(['name' => $name]);
-                    }
-
-                    return $owned->first(fn ($item) => $scannedItemIds->contains($item->id))
-                        ?? $owned->first();
-                })
-                ->sortBy(fn ($item) => Str::lower($item->name))
-                ->values();
+            // Mengambil seluruh barang milik siswa agar langsung tampil di dasbor (tidak 0/0)
+            $items = Item::where('user_id', $user->id)
+                ->orderBy('name')
+                ->get();
 
             $packedCount = $items
-                ->filter(fn ($item) => $item->id && $scannedItemIds->contains($item->id))
+                ->filter(fn ($item) => $scannedItemIds->contains($item->id))
                 ->count();
 
             $totalItems = $items->count();
