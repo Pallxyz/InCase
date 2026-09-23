@@ -16,7 +16,7 @@ class StoreSubjectRequest extends FormRequest
     public function authorize(): bool
     {
         return Auth::check()
-            && Auth::user()->role === 'teacher';
+            && in_array(Auth::user()->role, ['teacher', 'admin'], true);
     }
 
     public function rules(): array
@@ -25,6 +25,13 @@ class StoreSubjectRequest extends FormRequest
             'class_id' => [
                 'required',
                 'exists:school_classes,id',
+            ],
+            // Admin WAJIB memilih guru pengajar. Guru tidak mengisi ini sendiri
+            // (controller yang mengunci teacher_id = dirinya sendiri).
+            'teacher_id' => [
+                Rule::requiredIf(fn () => $this->user()?->role === 'admin'),
+                'sometimes',
+                Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'teacher')),
             ],
             'name' => [
                 'required',
@@ -65,12 +72,20 @@ class StoreSubjectRequest extends FormRequest
         ];
     }
 
+    /** Guru: selalu dirinya sendiri. Admin: guru yang dipilih di form. */
+    public function targetTeacherId(): ?int
+    {
+        return $this->user()->role === 'admin'
+            ? (int) $this->input('teacher_id')
+            : $this->user()->id;
+    }
+
     public function withValidator(Validator $validator): void
     {
         $this->checkScheduleConflicts(
             $validator,
             AcademicYear::active()?->id,   // jadwal baru selalu masuk tahun ajaran aktif
-            $this->user()->id,
+            $this->targetTeacherId(),
         );
     }
 }

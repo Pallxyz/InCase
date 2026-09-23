@@ -10,14 +10,17 @@ class RoleMiddleware
 {
     /**
      * Handle an incoming request.
+     *
+     * Bisa dipakai dengan satu role ('role:teacher') atau beberapa role
+     * dipisah koma ('role:teacher,admin').
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         if (! $request->user()) {
             abort(403);
         }
 
-        if ($request->user()->role !== $role) {
+        if (! in_array($request->user()->role, $roles, true)) {
             abort(403);
         }
 

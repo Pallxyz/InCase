@@ -5,60 +5,54 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
+use App\Models\AcademicYear;
+use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
-use App\Models\AcademicYear;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
+/**
+ * Jadwal (subjects) bisa dikelola oleh:
+ *  - GURU: hanya jadwal miliknya sendiri
+ *  - ADMIN: semua jadwal, semua kelas, semua guru
+ */
 class SubjectController extends Controller
 {
-    /**
-     * Display teacher schedules.
-     */
     public function index(): View
     {
         /** @var User $user */
         $user = User::findOrFail(Auth::id());
 
-        $subjects = Subject::with([
-            'teacher',
-            'schoolClass',
-            'requiredItems',
-        ])
-            ->where('teacher_id', $user->id)
+        $subjects = Subject::with(['teacher', 'schoolClass', 'requiredItems'])
+            ->when($user->role === 'teacher', fn ($q) => $q->where('teacher_id', $user->id))
             ->where('is_active', true)
             ->inActiveYear()
             ->orderByRaw("
-            FIELD(day,
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday'
-            )
-        ")
+                FIELD(day,
+                    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+                )
+            ")
             ->orderBy('start_time')
             ->get();
 
-        $school = \App\Models\School::where('name', $user->school_name)->first();
+        $school = School::where('name', $user->school_name)->first();
         $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         $classes = SchoolClass::where('school_name', $user->school_name)
-            ->where('major', 'PPLG')
             ->orderBy('grade')
             ->orderBy('major')
             ->get();
 
-        return view('schedules.index', compact(
-            'subjects',
-            'classes',
-            'schoolDayNames'
-        ));
+        // Admin butuh daftar guru untuk memilih siapa yang mengajar.
+        $teachers = $user->role === 'admin'
+            ? User::where('role', 'teacher')->where('school_name', $user->school_name)->orderBy('name')->get()
+            : collect();
+
+        return view('schedules.index', compact('subjects', 'classes', 'schoolDayNames', 'teachers'));
     }
 
     /**
@@ -69,27 +63,15 @@ class SubjectController extends Controller
         return redirect()->route('subjects.index');
     }
 
-    /**
-     * Store new subject.
-     */
-    public function store(
-        StoreSubjectRequest $request
-    ): RedirectResponse {
+    public function store(StoreSubjectRequest $request): RedirectResponse
+    {
+        $activeYear = AcademicYear::active();
 
-        /** @var User $user */
-        $user = User::findOrFail(Auth::id());
+        abort_if(! $activeYear, 422, 'Belum ada tahun ajaran aktif. Hubungi admin sekolah.');
 
-        $activeYear = \App\Models\AcademicYear::active();
+        $data = $request->safe()->except(['required_items', 'teacher_id']);
 
-        abort_if(
-            !$activeYear,
-            422,
-            'Belum ada tahun ajaran aktif. Hubungi admin sekolah.'
-        );
-
-        $data = $request->safe()->except('required_items');
-
-        $data['teacher_id'] = $user->id;
+        $data['teacher_id'] = $request->targetTeacherId();
         $data['academic_year_id'] = $activeYear->id;
 
         $subject = Subject::create($data);
@@ -98,79 +80,48 @@ class SubjectController extends Controller
 
         return redirect()
             ->route('subjects.index')
-            ->with('success', 'Schedule created successfully.');
+            ->with('success', 'Jadwal berhasil dibuat.');
     }
 
-    /**
-     * Display one schedule.
-     */
-    public function show(
-        Subject $subject
-    ): JsonResponse {
+    public function show(Subject $subject): JsonResponse
+    {
+        $this->authorizeManage($subject);
 
-        $this->authorizeTeacher($subject);
-
-        return response()->json(
-            $subject->load([
-                'teacher',
-                'schoolClass',
-                'requiredItems',
-            ])
-        );
+        return response()->json($subject->load(['teacher', 'schoolClass', 'requiredItems']));
     }
 
-    /**
-     * Edit modal data.
-     */
-    public function edit(
-        Subject $subject
-    ): JsonResponse {
+    public function edit(Subject $subject): JsonResponse
+    {
+        $this->authorizeManage($subject);
 
-        $this->authorizeTeacher($subject);
-
-        return response()->json(
-            $subject->load([
-                'schoolClass',
-                'requiredItems',
-            ])
-        );
+        return response()->json($subject->load(['schoolClass', 'requiredItems']));
     }
 
-    /**
-     * Update subject.
-     */
-    public function update(
-        UpdateSubjectRequest $request,
-        Subject $subject
-    ): RedirectResponse {
+    public function update(UpdateSubjectRequest $request, Subject $subject): RedirectResponse
+    {
+        $this->authorizeManage($subject);
 
-        $this->authorizeTeacher($subject);
+        $data = $request->safe()->except(['required_items', 'teacher_id']);
+        $data['teacher_id'] = $request->targetTeacherId();
 
-        $subject->update(
-            $request->safe()->except('required_items')
-        );
+        $subject->update($data);
 
         $this->syncRequiredItems($subject, $request->input('required_items'));
 
         return redirect()
             ->route('subjects.index')
-            ->with('success', 'Schedule updated successfully.');
+            ->with('success', 'Jadwal berhasil diperbarui.');
     }
 
-    /**
-     * Delete subject.
-     */
-    public function destroy(
-        Subject $subject
-    ): RedirectResponse {
-
-        $this->authorizeTeacher($subject);
+    public function destroy(Subject $subject): RedirectResponse
+    {
+        $this->authorizeManage($subject);
 
         $subject->delete();
 
         return redirect()
             ->route('subjects.index')
-            ->with('success', 'Schedule deleted successfully.');
+            ->with('success', 'Jadwal berhasil dihapus.');
     }
 
     /**
@@ -185,7 +136,7 @@ class SubjectController extends Controller
         }
 
         $names = collect(explode(',', $rawInput))
-            ->map(fn(string $name) => trim($name))
+            ->map(fn (string $name) => trim($name))
             ->filter()
             ->unique();
 
@@ -195,18 +146,17 @@ class SubjectController extends Controller
     }
 
     /**
-     * Verify ownership.
+     * Admin boleh mengelola jadwal siapa pun. Guru hanya jadwal miliknya sendiri.
      */
-    private function authorizeTeacher(
-        Subject $subject
-    ): void {
-
+    private function authorizeManage(Subject $subject): void
+    {
         /** @var User $user */
         $user = User::findOrFail(Auth::id());
 
-        abort_if(
-            $subject->teacher_id !== $user->id,
-            403
-        );
+        if ($user->role === 'admin') {
+            return;
+        }
+
+        abort_if($subject->teacher_id !== $user->id, 403);
     }
 }

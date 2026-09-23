@@ -94,7 +94,9 @@ class IncaseFlowTest extends TestCase
         $this->actingAs($teacher)->get('/holidays')->assertForbidden();
         $this->actingAs($this->student)->get('/academic-years')->assertForbidden();
         $this->actingAs($this->student)->get('/subjects')->assertForbidden();
-        $this->actingAs($this->admin)->get('/subjects')->assertForbidden();
+
+        // Sejak no.4: admin JUGA boleh mengelola jadwal (semua kelas/guru), bukan cuma guru.
+        $this->actingAs($this->admin)->get('/subjects')->assertOk();
     }
 
     // ---------------------------------------------------------------- dashboard barang wajib (no. 12)

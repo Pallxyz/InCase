@@ -15,7 +15,7 @@ class UpdateSubjectRequest extends FormRequest
     public function authorize(): bool
     {
         return Auth::check()
-            && Auth::user()->role === 'teacher';
+            && in_array(Auth::user()->role, ['teacher', 'admin'], true);
     }
 
     public function rules(): array
@@ -24,6 +24,11 @@ class UpdateSubjectRequest extends FormRequest
             'class_id' => [
                 'required',
                 'exists:school_classes,id',
+            ],
+            // Cuma admin yang boleh memindahkan jadwal ke guru lain.
+            'teacher_id' => [
+                'sometimes',
+                Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'teacher')),
             ],
             'name' => [
                 'required',
@@ -64,6 +69,16 @@ class UpdateSubjectRequest extends FormRequest
         ];
     }
 
+    /** Guru selain admin tidak mengirim teacher_id -> tetap milik guru itu sendiri. */
+    public function targetTeacherId(): ?int
+    {
+        $subject = $this->route('subject');
+
+        return $this->filled('teacher_id')
+            ? (int) $this->input('teacher_id')
+            : $subject->teacher_id;
+    }
+
     public function withValidator(Validator $validator): void
     {
         $subject = $this->route('subject');
@@ -71,7 +86,7 @@ class UpdateSubjectRequest extends FormRequest
         $this->checkScheduleConflicts(
             $validator,
             $subject->academic_year_id,    // tahun ajaran milik jadwal itu sendiri
-            $subject->teacher_id,
+            $this->targetTeacherId(),
             $subject->id,                  // jangan bentrok dengan dirinya sendiri
         );
     }

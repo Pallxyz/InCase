@@ -69,10 +69,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // GURU: kelola jadwal, barang wajib, dan PR miliknya sendiri
-    Route::middleware('role:teacher')->group(function () {
+    // Jadwal (subjects) bisa dikelola GURU (miliknya sendiri) maupun ADMIN (semua kelas/guru).
+    Route::middleware('role:teacher,admin')->group(function () {
         Route::resource('subjects', SubjectController::class);
+    });
 
-        // Pindah ruang untuk satu tanggal (bukan permanen)
+    Route::middleware('role:teacher')->group(function () {
+        // Pindah ruang untuk satu tanggal (bukan permanen) -- khusus guru pemilik jadwal.
         Route::post('subjects/{subject}/room-changes', [RoomChangeController::class, 'store'])
             ->name('subjects.room-changes.store');
         Route::delete('subjects/{subject}/room-changes/{roomChange}', [RoomChangeController::class, 'destroy'])
