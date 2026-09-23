@@ -352,7 +352,7 @@
         </button>
     @endif
 
-    {{-- ============ ADD SCHEDULE DRAWER (buat teacher & student) ============ --}}
+    {{-- ============ ADD SCHEDULE DRAWER ============ --}}
     @if ($canAddSchedule)
         <div id="add-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
             <div onclick="closeModal('add-subject-modal')" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
@@ -565,7 +565,7 @@
         </div>
     @endif
 
-    {{-- ============ EDIT & DELETE MODALS (khusus teacher) ============ --}}
+    {{-- ============ EDIT & DELETE MODALS ============ --}}
     @if ($isTeacher)
         <div id="edit-subject-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-3 sm:px-4">
             <div onclick="closeModal('edit-subject-modal')" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
@@ -992,7 +992,7 @@
                 });
             }
 
-            // ---- openEditModal (dipanggil dari tombol Edit di subject-card) ----
+            // ---- openEditModal (sudah diperbaiki untuk menangani pencocokan ID kelas) ----
             window.openEditModal = function (button) {
                 const form = document.getElementById('edit-subject-form');
                 if (!form) return;
@@ -1022,13 +1022,18 @@
                         document.getElementById('edit-required_items').value =
                             (subject.requiredItems || []).map(function (item) { return item.name; }).join(', ');
 
+                        const targetClassId = subject.class_id ?? (subject.school_class ? subject.school_class.id : null);
+
                         const currentClass = classesData.find(function (c) {
-                            return String(c.id) === String(subject.class_id);
+                            return String(c.id) === String(targetClassId);
                         });
 
                         if (currentClass) {
                             editGradeSelect.value = currentClass.grade;
                             populateClassOptions(editClassSelect, currentClass.grade, currentClass.id);
+                        } else {
+                            editGradeSelect.value = '';
+                            editClassSelect.innerHTML = '<option value="" disabled selected>Pilih tingkat dulu</option>';
                         }
 
                         form.action = '/subjects/' + id;
