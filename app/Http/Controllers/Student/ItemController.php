@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreItemRequest;
-use App\Http\Requests\UpdateItemRequest;
+// StoreItemRequest dan UpdateItemRequest tidak dipakai lagi, boleh dihapus atau dikomen
 use App\Models\Item;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request; // Menggunakan Request bawaan Laravel
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -37,10 +37,18 @@ class ItemController extends Controller
      * Store new item.
      */
     public function store(
-        StoreItemRequest $request
+        Request $request
     ): RedirectResponse {
 
-        $data = $request->validated();
+        // Validasi langsung di sini agar kategori bebas (tidak dibatasi Rule::in)
+        $data = $request->validate([
+            'name'        => 'required|max:255',
+            'category'    => 'required|string|max:255', // Diubah jadi string bebas
+            'rfid_uid'    => 'nullable|string|max:255|unique:items,rfid_uid',
+            'quantity'    => 'required|integer|min:0',
+            'description' => 'nullable|max:500',
+            'status'      => 'required|in:active,archived',
+        ]);
 
         $data['user_id'] = Auth::id();
 
@@ -88,7 +96,7 @@ class ItemController extends Controller
      * Update item.
      */
     public function update(
-        UpdateItemRequest $request,
+        Request $request,
         Item $item
     ): RedirectResponse {
 
@@ -97,9 +105,17 @@ class ItemController extends Controller
             403
         );
 
-        $item->update(
-            $request->validated()
-        );
+        // Validasi untuk update juga disamakan
+        $data = $request->validate([
+            'name'        => 'required|max:255',
+            'category'    => 'required|string|max:255',
+            'rfid_uid'    => 'nullable|string|max:255|unique:items,rfid_uid,' . $item->id, // Mengabaikan unik untuk item ini sendiri
+            'quantity'    => 'required|integer|min:0',
+            'description' => 'nullable|max:500',
+            'status'      => 'required|in:active,archived',
+        ]);
+
+        $item->update($data);
 
         return redirect()
             ->route('items.index')
