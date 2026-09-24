@@ -88,7 +88,7 @@ class IncaseFlowTest extends TestCase
     {
         $teacher = $this->teacherOf($this->todaySubjects()->first());
 
-        $this->actingAs($this->admin)->get('/dashboard')->assertRedirect(route('academic-years.index'));
+        $this->actingAs($this->admin)->get('/dashboard')->assertOk();
 
         $this->actingAs($teacher)->get('/academic-years')->assertForbidden();
         $this->actingAs($teacher)->get('/holidays')->assertForbidden();

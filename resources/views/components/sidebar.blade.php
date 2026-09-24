@@ -52,6 +52,13 @@
             'href' => route('holidays.index'),
             'active' => request()->routeIs('holidays.*'),
         ];
+
+        $navItems[] = [
+            'icon' => 'identification',
+            'label' => 'Akun Guru',
+            'href' => route('teachers.index'),
+            'active' => request()->routeIs('teachers.*'),
+        ];
     }
 @endphp
 

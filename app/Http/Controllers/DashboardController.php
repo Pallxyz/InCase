@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicYear;
 use App\Models\Holiday;
 use App\Models\Item;
 use App\Models\ScanLog;
+use App\Models\SchoolClass;
 use App\Models\Subject;
+use App\Models\User;
 use App\Services\ReturnCheckService;
 use App\Services\SchoolDayResolver;
 use Illuminate\Http\RedirectResponse;
@@ -22,10 +25,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Admin belum punya dashboard sendiri (langkah berikutnya),
-        // sementara diarahkan ke halaman Tahun Ajaran.
         if ($user->role === 'admin') {
-            return redirect()->route('academic-years.index');
+            return $this->adminDashboard($user);
         }
         $today = now()->englishDayOfWeek;
 
@@ -185,6 +186,24 @@ class DashboardController extends Controller
             'totalItems' => 0,
             'progress' => 0,
             'holiday' => null,
+        ]);
+    }
+
+    /**
+     * Dasbor admin: ringkasan jumlah guru, siswa, kelas, dan tahun ajaran aktif
+     * plus shortcut ke halaman kelola.
+     */
+    private function adminDashboard(User $user): View
+    {
+        $activeYear = AcademicYear::active();
+
+        return view('dashboard.admin', [
+            'user' => $user,
+            'teacherCount' => User::where('role', 'teacher')->count(),
+            'studentCount' => User::where('role', 'student')->count(),
+            'classCount' => SchoolClass::count(),
+            'activeYear' => $activeYear,
+            'holidayCount' => Holiday::count(),
         ]);
     }
 }
