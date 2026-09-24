@@ -39,6 +39,14 @@ class ItemResolutionController extends Controller
             'confirmed.accepted' => 'Konfirmasi dulu: yakin dengan pilihanmu?',
         ]);
 
+        // "Dikumpulkan / terbawa teman" cuma masuk akal untuk barang seperti buku.
+        // Barang pribadi (botol minum, dompet, dll) yang tidak kembali cuma bisa "hilang".
+        if ($data['status'] === ItemResolution::SUBMITTED && ! $item->canBeSubmitted()) {
+            throw ValidationException::withMessages([
+                'status' => "{$item->name} adalah barang pribadi, tidak bisa dijelaskan \"dikumpulkan\". Pilih \"hilang\".",
+            ]);
+        }
+
         $student = User::findOrFail(Auth::id());
 
         if (! $days->returnCheckOpen($student, now())) {
