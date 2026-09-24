@@ -1,6 +1,8 @@
 @props([
     'subject',
     'isTeacher' => false,
+    'canEdit' => false,
+    'canDelete' => false,
     'variant' => 'weekly', // 'today' | 'weekly' — controls type scale only, markup stays identical
 ])
 
@@ -70,7 +72,7 @@
         </div>
     @endif
 
-    @if ($isTeacher)
+    @if ($canEdit)
         <div class="mt-4 flex items-center gap-2 border-t border-border pt-4">
             <button
                 type="button"
@@ -81,16 +83,19 @@
                 <x-icon.pencil class="h-3.5 w-3.5" />
                 Edit
             </button>
-            <button
-                type="button"
-                data-id="{{ $subject->id }}"
-                data-name="{{ $subject->name }}"
-                onclick="openDeleteModal(this)"
-                class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
-            >
-                <x-icon.trash class="h-3.5 w-3.5" />
-                Hapus
-            </button>
+
+            @if ($canDelete)
+                <button
+                    type="button"
+                    data-id="{{ $subject->id }}"
+                    data-name="{{ $subject->name }}"
+                    onclick="openDeleteModal(this)"
+                    class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                >
+                    <x-icon.trash class="h-3.5 w-3.5" />
+                    Hapus
+                </button>
+            @endif
         </div>
     @endif
 </div>

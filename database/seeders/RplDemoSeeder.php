@@ -8,6 +8,7 @@ use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Seeder\RplTimetable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -150,7 +151,7 @@ class RplDemoSeeder extends Seeder
                         'user_id' => $student->id,
                         'name' => $itemName,
                         'category' => RplTimetable::ITEM_CATEGORY[$itemName],
-                        'quantity' => 1,
+                        // 'quantity' => 1,
                         'status' => 'active',
                     ],
                 );

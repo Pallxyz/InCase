@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ItemScanPollController;
 use App\Http\Controllers\Teacher\AcademicYearController;
+use App\Http\Controllers\Teacher\SchedulePdfController;
 
 use App\Http\Controllers\Teacher\SubjectController;
 use App\Http\Controllers\Teacher\RoomChangeController;
@@ -33,9 +34,9 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('items', ItemController::class);
 
-    // Barang belum kembali saat cek pulang: dikumpulkan / hilang (butuh confirmed=1)
-    Route::post('/items/{item}/resolve', [ItemResolutionController::class, 'store'])
-        ->name('items.resolve');
+        // Barang belum kembali saat cek pulang: dikumpulkan / hilang (butuh confirmed=1)
+        Route::post('/items/{item}/resolve', [ItemResolutionController::class, 'store'])
+            ->name('items.resolve');
 
         Route::get('/scan-history', [ScanHistoryController::class, 'index'])
             ->name('scan-history.index');
@@ -70,6 +71,11 @@ Route::middleware('auth')->group(function () {
 
     // GURU: kelola jadwal, barang wajib, dan PR miliknya sendiri
     // Jadwal (subjects) bisa dikelola GURU (miliknya sendiri) maupun ADMIN (semua kelas/guru).
+
+    Route::get('/subjects/print/{schoolClass}', [SchedulePdfController::class, 'export'])
+        ->name('subjects.print')
+        ->middleware(['auth', 'role:admin']);
+
     Route::middleware('role:teacher,admin')->group(function () {
         Route::resource('subjects', SubjectController::class);
     });
