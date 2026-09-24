@@ -29,8 +29,8 @@
 
 <div
     data-scan-id="{{ $scanId }}"
-    x-show="matches({{ $scanId }})"
-    :style="'order:' + order({{ $scanId }})"
+    x-show="matches({{ Illuminate\Support\Js::from($scanId) }})"
+    :style="'order:' + order({{ Illuminate\Support\Js::from($scanId) }})"
     x-data="{ expanded: false }"
     class="relative flex gap-4"
 >

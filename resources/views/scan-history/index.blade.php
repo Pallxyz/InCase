@@ -1,120 +1,15 @@
 @php
-    $scans = [
-        [
-            'id' => 1,
-            'time' => '07:14',
-            'date' => '9 Jul 2026',
-            'scanType' => 'Auto Scan',
-            'status' => 'success',
-            'duration' => '0.8 detik',
-            'itemsDetected' => 8,
-            'itemsTotal' => 8,
-            'detectedItems' => ['Laptop', 'Buku Fisika', 'Kalkulator', 'Botol Minum', 'Buku Matematika', 'Buku Tulis', 'Pensil', 'Penggaris'],
-            'missingItems' => [],
-            'aiSummary' => 'Semua barang wajib hari ini terdeteksi lengkap. Tas siap dibawa ke sekolah.',
-            'device' => 'ESP32-01',
-            'location' => 'Box Kamar Nopal',
-            'signal' => 'Kuat',
-        ],
-        [
-            'id' => 2,
-            'time' => '06:52',
-            'date' => '9 Jul 2026',
-            'scanType' => 'Manual Scan',
-            'status' => 'warning',
-            'duration' => '1.2 detik',
-            'itemsDetected' => 6,
-            'itemsTotal' => 8,
-            'detectedItems' => ['Laptop', 'Buku Fisika', 'Kalkulator', 'Botol Minum', 'Buku Tulis', 'Pensil'],
-            'missingItems' => ['Buku Matematika', 'Penggaris'],
-            'aiSummary' => 'Ada 2 barang yang belum terdeteksi. Coba pindai ulang setelah semua barang dimasukkan ke tas.',
-            'device' => 'ESP32-01',
-            'location' => 'Box Kamar Nopal',
-            'signal' => 'Sedang',
-        ],
-        [
-            'id' => 3,
-            'time' => '20:31',
-            'date' => '8 Jul 2026',
-            'scanType' => 'Bag Closed',
-            'status' => 'success',
-            'duration' => '0.6 detik',
-            'itemsDetected' => 8,
-            'itemsTotal' => 8,
-            'detectedItems' => ['Laptop', 'Buku Fisika', 'Kalkulator', 'Botol Minum', 'Buku Matematika', 'Buku Tulis', 'Pensil', 'Penggaris'],
-            'missingItems' => [],
-            'aiSummary' => 'Tas ditutup dengan seluruh barang wajib untuk esok hari sudah lengkap.',
-            'device' => 'ESP32-01',
-            'location' => 'Box Kamar Nopal',
-            'signal' => 'Kuat',
-        ],
-        [
-            'id' => 4,
-            'time' => '14:45',
-            'date' => '8 Jul 2026',
-            'scanType' => 'Auto Scan',
-            'status' => 'missing',
-            'duration' => '1.5 detik',
-            'itemsDetected' => 5,
-            'itemsTotal' => 8,
-            'detectedItems' => ['Laptop', 'Kalkulator', 'Botol Minum', 'Buku Tulis', 'Pensil'],
-            'missingItems' => ['Buku Fisika', 'Buku Matematika', 'Penggaris'],
-            'aiSummary' => 'Tiga barang penting belum terdeteksi sejak pulang sekolah. Cek kembali isi tas.',
-            'device' => 'ESP32-01',
-            'location' => 'Box Kamar Nopal',
-            'signal' => 'Lemah',
-        ],
-        [
-            'id' => 5,
-            'time' => '07:10',
-            'date' => '8 Jul 2026',
-            'scanType' => 'Auto Scan',
-            'status' => 'success',
-            'duration' => '0.9 detik',
-            'itemsDetected' => 8,
-            'itemsTotal' => 8,
-            'detectedItems' => ['Laptop', 'Buku Fisika', 'Kalkulator', 'Botol Minum', 'Buku Matematika', 'Buku Tulis', 'Pensil', 'Penggaris'],
-            'missingItems' => [],
-            'aiSummary' => 'Semua barang wajib hari ini terdeteksi lengkap.',
-            'device' => 'ESP32-01',
-            'location' => 'Box Kamar Nopal',
-            'signal' => 'Kuat',
-        ],
-        [
-            'id' => 6,
-            'time' => '19:20',
-            'date' => '7 Jul 2026',
-            'scanType' => 'Bag Open',
-            'status' => 'warning',
-            'duration' => '0.7 detik',
-            'itemsDetected' => 7,
-            'itemsTotal' => 8,
-            'detectedItems' => ['Laptop', 'Buku Fisika', 'Kalkulator', 'Botol Minum', 'Buku Matematika', 'Buku Tulis', 'Pensil'],
-            'missingItems' => ['Penggaris'],
-            'aiSummary' => 'Tas dibuka untuk mengecek isi. 1 barang kecil belum terdeteksi, kemungkinan tertinggal di kamar.',
-            'device' => 'ESP32-01',
-            'location' => 'Box Kamar Nopal',
-            'signal' => 'Sedang',
-        ],
-    ];
-
-    $itemsForAlpine = collect($scans)->map(function ($scan) {
+    $itemsForAlpine = $scans->map(function ($scan) {
         return [
             'id' => $scan['id'],
             'scanType' => $scan['scanType'],
             'status' => $scan['status'],
-            'timestamp' => strtotime($scan['date'] . ' ' . $scan['time']),
+            'dateRaw' => $scan['dateRaw'],
+            'timestamp' => $scan['timestamp'],
         ];
     })->values();
 
-    // Analytics panel kanan
-    $todayScans = collect($scans)->filter(fn ($s) => $s['date'] === '9 Jul 2026');
-    $totalScansToday = $todayScans->count();
-    $successScansToday = $todayScans->where('status', 'success')->count();
-    $missingAlertsToday = $todayScans->whereIn('status', ['missing', 'warning'])->count();
-    $avgDuration = $todayScans->isNotEmpty()
-        ? round($todayScans->avg(fn ($s) => (float) str_replace(' detik', '', $s['duration'])), 1)
-        : 0;
+    $lastSyncLabel = $lastScan ? $lastScan->scanned_at->diffForHumans() : 'Belum pernah';
 @endphp
 
 @push('scripts')
@@ -124,6 +19,7 @@
             items: [],
             search: '',
             status: 'all',
+            dateFilter: '',
             sortBy: 'newest',
 
             matches(id) {
@@ -132,8 +28,9 @@
 
                 const searchMatch = item.scanType.toLowerCase().includes(this.search.toLowerCase());
                 const statusMatch = this.status === 'all' || item.status === this.status;
+                const dateMatch = this.dateFilter === '' || item.dateRaw === this.dateFilter;
 
-                return searchMatch && statusMatch;
+                return searchMatch && statusMatch && dateMatch;
             },
 
             sortedIds() {
@@ -170,7 +67,7 @@
                             Riwayat Pindai
                         </h1>
                         <p class="mt-1.5 text-sm text-muted-foreground">
-                            Lihat setiap pemindaian RFID, analisis AI, dan aktivitas tas.
+                            Lihat setiap pemindaian RFID, dicocokkan dengan barang wajib di jadwal kamu.
                         </p>
                     </div>
 
@@ -212,6 +109,7 @@
                         </span>
                         <input
                             type="date"
+                            x-model="dateFilter"
                             class="rounded-xl border border-border bg-background py-2.5 pl-10 pr-3.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                         >
                     </div>
@@ -264,7 +162,7 @@
                 </div>
 
                 {{-- Empty state --}}
-                <div class="mt-8" x-show="visibleCount() === 0" x-cloak>
+                <div class="mt-8" @if($scans->isNotEmpty()) x-show="visibleCount() === 0" x-cloak @endif>
                     <x-empty-state
                         icon="viewfinder-circle"
                         title="Belum ada riwayat pindai"
@@ -322,13 +220,13 @@
                         </span>
                         <div>
                             <p class="text-sm font-medium text-foreground">ESP32-01 Terhubung</p>
-                            <p class="text-xs text-muted-foreground">Box Kamar Nopal</p>
+                            <p class="text-xs text-muted-foreground">Box RFID Kamu</p>
                         </div>
                     </div>
 
                     <div class="mt-4 flex items-center justify-between border-t border-border pt-4 text-xs">
                         <span class="text-muted-foreground">Sinkronisasi Terakhir</span>
-                        <span class="font-medium text-foreground">5 detik lalu</span>
+                        <span class="font-medium text-foreground">{{ $lastSyncLabel }}</span>
                     </div>
                 </div>
             </div>
