@@ -3,11 +3,12 @@
 namespace Database\Seeders;
 
 /**
- * Data jadwal demo: SMKN 1 Cirebon, jurusan RPL, 6 kelas.
+ * Data jadwal demo: SMKN 1 Cirebon, jurusan RPL (PPLG), 6 kelas.
  * Murni data (tanpa database) supaya bisa dites tanpa Laravel.
  *
- * Jadwal dijamin TIDAK BENTROK:
- *  - satu guru per mapel (8 mapel, 8 guru)
+ * Jadwal seminggu penuh (Senin-Jumat), 14 mata pelajaran (kelompok umum +
+ * produktif RPL), dan dijamin TIDAK BENTROK:
+ *  - satu guru per mapel (14 mapel, 14 guru)
  *  - di jam yang sama, 6 kelas mendapat 6 mapel BERBEDA (jadi tidak ada guru mengajar dua kelas sekaligus)
  *  - tiap kelas punya ruangnya sendiri (tidak ada ruang dobel)
  */
@@ -15,9 +16,15 @@ final class RplTimetable
 {
     /** [nama mapel, nama guru, barang wajib] */
     public const SUBJECTS = [
+        ['Pendidikan Agama Islam', 'Ahmad Fauzan', ['Buku Paket PAI']],
+        ['Pendidikan Pancasila', 'Yeni Marlina', ['Buku Paket PPKN']],
+        ['Bahasa Indonesia', 'Sari Wulandari', ['Buku Tulis Bahasa Indonesia', 'Buku Paket Bahasa Indonesia']],
         ['Matematika', 'Andi Pratama', ['Buku Paket Matematika', 'Kalkulator']],
-        ['Bahasa Indonesia', 'Sari Wulandari', ['Buku Tulis Bahasa Indonesia']],
         ['Bahasa Inggris', 'Rina Kusuma', ['Kamus Bahasa Inggris']],
+        ['Sejarah Indonesia', 'Wahyu Setiawan', ['Buku Paket Sejarah Indonesia']],
+        ['Seni Budaya', 'Ratna Dewanti', []],
+        ['PJOK', 'Doni Kurniawan', ['Baju Olahraga', 'Sepatu Olahraga']],
+        ['Bahasa Sunda', 'Euis Kartika', ['Buku Paket Bahasa Sunda']],
         ['Pemrograman Web', 'Budi Santoso', ['Laptop', 'Charger Laptop', 'Flashdisk']],
         ['Basis Data', 'Dewi Lestari', ['Laptop', 'Charger Laptop']],
         ['Pemrograman Berorientasi Objek', 'Hendra Gunawan', ['Laptop', 'Charger Laptop', 'Mouse']],
@@ -40,16 +47,23 @@ final class RplTimetable
     public const SLOTS = [['07:00', '08:30'], ['08:45', '10:15'], ['10:30', '12:00']];
 
     public const ITEM_CATEGORY = [
-        'Buku Paket Matematika' => 'Book',
+        'Buku Paket PAI' => 'Book',
+        'Buku Paket PPKN' => 'Book',
         'Buku Tulis Bahasa Indonesia' => 'Book',
-        'Kamus Bahasa Inggris' => 'Book',
-        'Buku Tulis PKK' => 'Book',
+        'Buku Paket Bahasa Indonesia' => 'Book',
+        'Buku Paket Matematika' => 'Book',
         'Kalkulator' => 'Electronics',
+        'Kamus Bahasa Inggris' => 'Book',
+        'Buku Paket Sejarah Indonesia' => 'Book',
+        'Baju Olahraga' => 'Sports',
+        'Sepatu Olahraga' => 'Sports',
+        'Buku Paket Bahasa Sunda' => 'Book',
         'Laptop' => 'Electronics',
         'Charger Laptop' => 'Electronics',
         'Flashdisk' => 'Electronics',
         'Mouse' => 'Electronics',
         'Kabel Data' => 'Electronics',
+        'Buku Tulis PKK' => 'Book',
     ];
 
     /**
