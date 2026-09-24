@@ -35,7 +35,7 @@ class ScanPhaseTest extends TestCase
         if (DB::connection()->getDriverName() === 'sqlite') {
             DB::connection()->getPdo()->sqliteCreateFunction(
                 'FIELD',
-                fn ($value, ...$list) => ($i = array_search($value, $list)) === false ? 0 : $i + 1
+                fn($value, ...$list) => ($i = array_search($value, $list)) === false ? 0 : $i + 1
             );
         }
 
@@ -65,7 +65,7 @@ class ScanPhaseTest extends TestCase
     {
         return Subject::inActiveYear()->with('requiredItems')
             ->where('class_id', $this->class->id)->where('day', 'Monday')->get()
-            ->flatMap(fn ($s) => $s->requiredItems->pluck('name'))->unique()->sort()->values()->all();
+            ->flatMap(fn($s) => $s->requiredItems->pluck('name'))->unique()->sort()->values()->all();
     }
 
     private function item(string $name): Item
@@ -108,7 +108,7 @@ class ScanPhaseTest extends TestCase
     {
         $this->at('2026-09-21 19:00');   // Senin malam -> untuk Selasa
         $tuesday = Subject::inActiveYear()->with('requiredItems')->where('class_id', $this->class->id)->where('day', 'Tuesday')->get()
-            ->flatMap(fn ($s) => $s->requiredItems->pluck('name'))->unique()->sort()->values()->all();
+            ->flatMap(fn($s) => $s->requiredItems->pluck('name'))->unique()->sort()->values()->all();
 
         foreach ($tuesday as $name) {
             $body = $this->scan($name);
@@ -202,8 +202,18 @@ class ScanPhaseTest extends TestCase
     {
         $packed = $this->packEverything();
         $this->at('2026-09-21 12:30');
-        $this->scan($packed[0]);                       // satu barang kembali
-        $missing = $this->item($packed[1]);
+
+        // Pilih barang Book dulu, baru scan barang LAIN supaya barang Book ini
+        // yang tetap berstatus "belum kembali" (tidak bergantung posisi index).
+        $bookName = collect($packed)->first(fn($name) => $this->item($name)->category === 'Book');
+        $this->assertNotNull($bookName, 'butuh minimal satu barang kategori Book di barang wajib hari ini untuk tes ini');
+        $missing = $this->item($bookName);
+
+        foreach ($packed as $name) {
+            if ($name !== $bookName) {
+                $this->scan($name);   // barang-barang lain kembali
+            }
+        }
 
         $url = "/items/{$missing->id}/resolve";
 
@@ -234,6 +244,29 @@ class ScanPhaseTest extends TestCase
         $this->assertTrue($r->viewData('returnCheckOpen'));
         $this->assertTrue($r->viewData('notReturned')->contains('id', $missing->id));
         $this->assertSame('lost', $r->viewData('resolutions')->get($missing->id)->status);
+    }
+
+    public function test_barang_pribadi_yang_tidak_kembali_cuma_bisa_dijelaskan_hilang(): void
+    {
+        $packed = $this->packEverything();
+        $this->at('2026-09-21 12:30');
+
+        // Barang non-Book (mis. Electronics atau tanpa kategori) tidak boleh "dikumpulkan".
+        $nonBookName = collect($packed)->first(fn($name) => $this->item($name)->category !== 'Book');
+        $this->assertNotNull($nonBookName, 'butuh minimal satu barang non-Book di barang wajib hari ini untuk tes ini');
+        $item = $this->item($nonBookName);
+
+        $url = "/items/{$item->id}/resolve";
+
+        // coba "dikumpulkan" -> ditolak, karena barang pribadi tidak bisa "dikumpulkan"
+        $this->actingAs($this->student)->post($url, ['status' => 'submitted', 'confirmed' => 1])
+            ->assertSessionHasErrors('status');
+        $this->assertSame(0, ItemResolution::count());
+
+        // "hilang" tetap boleh
+        $this->actingAs($this->student)->post($url, ['status' => 'lost', 'confirmed' => 1])
+            ->assertSessionHasNoErrors()->assertSessionHas('success');
+        $this->assertSame('lost', ItemResolution::first()->status);
     }
 
     public function test_barang_yang_ternyata_ketemu_menghapus_catatan_hilang(): void
