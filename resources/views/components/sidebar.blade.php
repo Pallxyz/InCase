@@ -23,6 +23,7 @@
             'label' => 'Jadwal',
             'href' => route('schedule.index'),
             'active' => request()->routeIs('schedule.*'),
+            'badge' => $user->unreadNotifications()->count(),
         ];
 
         $navItems[] = [
@@ -39,6 +40,13 @@
             'active' => request()->routeIs('subjects.*'),
         ];
     } elseif ($user->role === 'admin') {
+        $navItems[] = [
+            'icon' => 'calendar-days',
+            'label' => 'Jadwal',
+            'href' => route('subjects.index'),
+            'active' => request()->routeIs('subjects.*'),
+        ];
+
         $navItems[] = [
             'icon' => 'academic-cap',
             'label' => 'Tahun Ajaran',
@@ -62,81 +70,53 @@
     }
 @endphp
 
-{{-- Backdrop mobile — nutup sidebar pas diklik di luar --}}
-<div x-cloak x-show="$store.sidebar.open" x-transition.opacity @click="$store.sidebar.open = false"
-    class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"></div>
+<aside class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card lg:flex">
+    {{-- ============ BRAND ============ --}}
+    <div class="flex h-16 shrink-0 items-center gap-2.5 border-b border-border px-6">
+        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <x-icon.cube class="h-5 w-5" />
+        </span>
+        <span class="text-lg font-bold tracking-tight text-foreground">InCase</span>
+    </div>
 
-<aside x-cloak :class="$store.sidebar.open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    class="fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-border bg-card transition-transform duration-300 ease-in-out">
-    <div class="scrollbar-none flex h-full flex-col justify-between overflow-y-auto p-5">
-        <div>
-            <div class="flex items-center justify-between gap-3 px-2 pb-8">
-                <div class="flex items-center gap-3">
-                    <span
-                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                        <x-icon.viewfinder-circle class="h-5 w-5" />
+    {{-- ============ NAV ITEMS ============ --}}
+    <nav class="flex-1 space-y-1 overflow-y-auto px-4 py-6">
+        @foreach ($navItems as $item)
+            <a href="{{ $item['href'] }}"
+                class="group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors {{ $item['active'] ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground' }}">
+                <x-dynamic-component :component="'icon.' . $item['icon']" class="h-5 w-5 shrink-0" />
+                <span class="flex-1 truncate">{{ $item['label'] }}</span>
+                @if (!empty($item['badge']))
+                    <span class="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-semibold text-white">
+                        {{ $item['badge'] }}
                     </span>
-                    <div>
-                        <p class="text-base font-bold leading-none text-foreground">InCase</p>
-                        <p class="mt-1 text-xs font-medium text-muted-foreground">Tas Sekolah Pintar</p>
-                    </div>
-                </div>
+                @endif
+            </a>
+        @endforeach
+    </nav>
 
-                <button type="button" @click="$store.sidebar.open = false"
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-                    aria-label="Tutup menu navigasi">
-                    <x-icon.x class="h-4.5 w-4.5" />
-                </button>
-            </div>
-
-            <nav class="flex flex-col gap-1">
-                @foreach ($navItems as $item)
-                    <a href="{{ $item['href'] }}" @click="$store.sidebar.open = false" @class([
-                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                        'bg-primary/10 text-primary' => $item['active'],
-                        'text-muted-foreground hover:bg-muted hover:text-foreground' => !$item[
-                            'active'
-                        ],
-                    ])>
-                        <x-dynamic-component :component="'icon.' . $item['icon']" class="h-5 w-5" />
-                        {{ $item['label'] }}
-                    </a>
-                @endforeach
-            </nav>
-        </div>
-
-        <div class="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
-            @if (auth()->user()->avatar)
-                <img src="{{ asset('storage/' . auth()->user()->avatar) }}" alt="{{ auth()->user()->name }}"
-                    class="h-9 w-9 shrink-0 rounded-full object-cover">
-            @else
-                <span
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                </span>
-            @endif
-
+    {{-- ============ USER + LOGOUT ============ --}}
+    <div class="border-t border-border p-4">
+        <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                @if ($user->avatar)
+                    <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="h-9 w-9 rounded-full object-cover">
+                @else
+                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                @endif
+            </span>
             <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-foreground">
-                    {{ auth()->user()->name }}
-                </p>
-
-                <p class="truncate text-[11px] text-muted-foreground">
-                    {{ auth()->user()->email }}
-                </p>
+                <p class="truncate text-sm font-semibold text-foreground">{{ $user->name }}</p>
+                <p class="truncate text-xs capitalize text-muted-foreground">{{ $user->role }}</p>
             </div>
+        </a>
 
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-
-                <button type="submit"
-                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
-                    aria-label="Keluar">
-
-                    <x-icon.arrow-left-on-rectangle class="h-4 w-4" />
-
-                </button>
-            </form>
-        </div>
+        <form method="POST" action="{{ route('logout') }}" class="mt-2">
+            @csrf
+            <button type="submit"
+                class="flex w-full items-center justify-center rounded-xl px-3.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive">
+                Keluar
+            </button>
+        </form>
     </div>
 </aside>

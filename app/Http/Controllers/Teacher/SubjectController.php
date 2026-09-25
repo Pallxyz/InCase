@@ -28,7 +28,7 @@ class SubjectController extends Controller
         $user = User::findOrFail(Auth::id());
 
         $subjects = Subject::with(['teacher', 'schoolClass', 'requiredItems'])
-            ->when($user->role === 'teacher', fn ($q) => $q->where('teacher_id', $user->id))
+            ->when($user->role === 'teacher', fn($q) => $q->where('teacher_id', $user->id))
             ->where('is_active', true)
             ->inActiveYear()
             ->orderByRaw("
@@ -102,7 +102,10 @@ class SubjectController extends Controller
         $this->authorizeManage($subject);
 
         $data = $request->safe()->except(['required_items', 'teacher_id']);
-        $data['teacher_id'] = $request->targetTeacherId();
+
+        if ($request->user()->role === 'admin') {
+            $data['teacher_id'] = $request->targetTeacherId();
+        }
 
         $subject->update($data);
 
@@ -136,7 +139,7 @@ class SubjectController extends Controller
         }
 
         $names = collect(explode(',', $rawInput))
-            ->map(fn (string $name) => trim($name))
+            ->map(fn(string $name) => trim($name))
             ->filter()
             ->unique();
 

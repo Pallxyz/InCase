@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ItemScanPollController;
 use App\Http\Controllers\Teacher\AcademicYearController;
+use App\Http\Controllers\Teacher\SchedulePdfController;
 
 use App\Http\Controllers\Teacher\SubjectController;
 use App\Http\Controllers\Teacher\RoomChangeController;
@@ -73,6 +74,11 @@ Route::middleware('auth')->group(function () {
 
     // GURU: kelola jadwal, barang wajib, dan PR miliknya sendiri
     // Jadwal (subjects) bisa dikelola GURU (miliknya sendiri) maupun ADMIN (semua kelas/guru).
+
+    Route::get('/subjects/print/{schoolClass}', [SchedulePdfController::class, 'export'])
+        ->name('subjects.print')
+        ->middleware(['auth', 'role:admin']);
+
     Route::middleware('role:teacher,admin')->group(function () {
         Route::resource('subjects', SubjectController::class);
     });

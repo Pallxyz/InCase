@@ -8,17 +8,19 @@ use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Seeder\RplTimetable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
  * Data demo lengkap untuk SMKN 1 Cirebon, jurusan RPL:
- * 1 tahun ajaran aktif, 6 kelas, 8 guru, jadwal lengkap Senin-Jumat
- * (3 pelajaran per hari, tanpa bentrok), barang wajib, 18 siswa + barangnya.
+ * 1 tahun ajaran aktif (otomatis mengikuti tahun berjalan), 6 kelas, 14 guru,
+ * jadwal lengkap Senin-Jumat (3 jam pelajaran per hari, tanpa bentrok),
+ * barang wajib, 18 siswa + barangnya.
  *
  * Aman dijalankan berulang kali (tidak menggandakan data).
  * Akun demo (password semuanya: "password"):
- *   guru : guru.matematika@incase.test, guru.pemrograman-web@incase.test, dst.
+ *   guru : guru.pendidikan-agama-islam@incase.test, guru.matematika@incase.test, dst.
  *   siswa: siswa01@incase.test ... siswa18@incase.test  (siswa01 = X RPL 1)
  */
 class RplDemoSeeder extends Seeder
@@ -26,12 +28,12 @@ class RplDemoSeeder extends Seeder
     private const SCHOOL = 'SMKN 1 Cirebon';
 
     private const STUDENT_NAMES = [
-        'Aditya Rahman', 'Bella Safitri', 'Cahya Ramadhan',
-        'Dinda Permata', 'Eko Prasetyo', 'Fitri Handayani',
-        'Galih Saputra', 'Hana Nabilah', 'Ilham Fauzi',
-        'Jasmine Putri', 'Kevin Anggara', 'Lutfi Hakim',
-        'Maya Anjani', 'Naufal Hidayat', 'Olivia Rahmawati',
-        'Putra Wijaya', 'Qonita Azzahra', 'Rizky Firmansyah',
+        'Muhammad Rizky Ramadhan', 'Siti Nur Azizah', 'Fajar Nugroho',
+        'Ayu Lestari', 'Bagas Setiawan', 'Intan Permatasari',
+        'Rendy Firmansyah', 'Salsabila Putri', 'Dimas Aditya',
+        'Nadia Ramadhani', 'Reza Maulana', 'Wulan Sari',
+        'Taufik Hidayat', 'Yulia Anggraini', 'Gilang Saputra',
+        'Devi Oktaviani', 'Hafizh Al Farizi', 'Cindy Amelia',
     ];
 
     public function run(): void
@@ -149,7 +151,7 @@ class RplDemoSeeder extends Seeder
                         'user_id' => $student->id,
                         'name' => $itemName,
                         'category' => RplTimetable::ITEM_CATEGORY[$itemName],
-                        'quantity' => 1,
+                        // 'quantity' => 1,
                         'status' => 'active',
                     ],
                 );

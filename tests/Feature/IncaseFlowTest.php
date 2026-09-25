@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\RoomChangedNotification;
 use App\Services\ScanService;
 use Database\Seeders\AdminSeeder;
+use Database\Seeders\RplScheduleSeeder;
 use Database\Seeders\RplDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -320,11 +321,12 @@ class IncaseFlowTest extends TestCase
     public function test_seeder_idempoten_dan_datanya_lengkap(): void
     {
         $this->seed(RplDemoSeeder::class);   // kedua kali
+        $this->seed(RplScheduleSeeder::class);   
 
         $this->assertSame(1, AcademicYear::count());
         $this->assertSame(6, SchoolClass::where('major', 'PPLG')->count());
         $this->assertSame(90, Subject::count());
         $this->assertSame(18, User::where('role', 'student')->count());
-        $this->assertSame(180, Item::count());
+        $this->assertSame(306, Item::count());
     }
 }

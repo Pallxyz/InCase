@@ -173,19 +173,11 @@ class DashboardController extends Controller
                     ->count();
             });
 
-        return view('dashboard.index', [
-            'role' => 'teacher',
+        return view('dashboard.teacher', [
             'user' => $user,
             'todaySubjects' => $todaySubjects,
             'subjectCount' => $subjectCount,
             'studentCount' => $studentCount,
-            // Student only
-            'items' => collect(),
-            'todayScans' => collect(),
-            'packedCount' => 0,
-            'totalItems' => 0,
-            'progress' => 0,
-            'holiday' => null,
         ]);
     }
 

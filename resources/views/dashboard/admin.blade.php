@@ -9,11 +9,21 @@
 
     $dayNames = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'];
     $monthNames = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember',
     ];
-    $todayFull = $dayNames[now()->dayOfWeekIso] . ', ' . now()->day . ' ' . $monthNames[now()->month] . ' ' . now()->year;
+    $todayFull =
+        $dayNames[now()->dayOfWeekIso] . ', ' . now()->day . ' ' . $monthNames[now()->month] . ' ' . now()->year;
 @endphp
 
 <x-layouts.dashboard title="Dasbor Admin — InCase">
@@ -88,10 +98,11 @@
                 <div class="mt-8">
                     <h2 class="text-base font-semibold text-foreground">Kelola</h2>
 
-                    <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <a href="{{ route('teachers.index') }}"
-                            class="group flex flex-col gap-3 rounded-[24px] border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/30">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"> <a
+                            href="{{ route('teachers.index') }}"
+                           class="group flex flex-col gap-3 rounded-[24px] border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/30">
+                            <span
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <x-icon.identification class="h-5 w-5" />
                             </span>
                             <div>
@@ -100,9 +111,22 @@
                             </div>
                         </a>
 
+                        <a href="{{ route('subjects.index') }}"
+                            class="group flex flex-col gap-3 rounded-[24px] border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/30">
+                            <span
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <x-icon.clock class="h-5 w-5" />
+                            </span>
+                            <div>
+                                <p class="font-semibold text-foreground">Jadwal Pelajaran</p>
+                                <p class="mt-0.5 text-xs text-muted-foreground">Tambah & kelola jadwal semua kelas</p>
+                            </div>
+                        </a>
+
                         <a href="{{ route('academic-years.index') }}"
                             class="group flex flex-col gap-3 rounded-[24px] border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/30">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <span
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <x-icon.academic-cap class="h-5 w-5" />
                             </span>
                             <div>
@@ -113,12 +137,14 @@
 
                         <a href="{{ route('holidays.index') }}"
                             class="group flex flex-col gap-3 rounded-[24px] border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/30">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <span
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <x-icon.calendar class="h-5 w-5" />
                             </span>
                             <div>
                                 <p class="font-semibold text-foreground">Hari Libur</p>
-                                <p class="mt-0.5 text-xs text-muted-foreground">{{ $holidayCount }} hari libur terdaftar</p>
+                                <p class="mt-0.5 text-xs text-muted-foreground">{{ $holidayCount }} hari libur
+                                    terdaftar</p>
                             </div>
                         </a>
                     </div>

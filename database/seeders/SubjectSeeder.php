@@ -5,21 +5,31 @@ namespace Database\Seeders;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
+use App\Models\AcademicYear;
 use Illuminate\Database\Seeder;
 
 class SubjectSeeder extends Seeder
 {
     public function run(): void
     {
-        $teacher = User::where('role', 'teacher')->first();
+        $teachers = User::where('role', 'teacher')->get();
 
-        $class = SchoolClass::where('name', 'XI RPL 2')->first();
+        $classes = SchoolClass::whereIn('name', [
+            'X RPL 1',
+            'X RPL 2',
+            'XI RPL 1',
+            'XI RPL 2',
+            'XII RPL 1',
+            'XII RPL 2',
+        ])->get();
 
-        if (!$teacher || !$class) {
+        $activeYear = AcademicYear::active();
+
+        if ($teachers->isEmpty() || $classes->isEmpty() || !$activeYear) {
             return;
         }
 
-        $subjects = [
+        $subjectTemplates = [
 
             /*
             |--------------------------------------------------------------------------
@@ -28,47 +38,48 @@ class SubjectSeeder extends Seeder
             */
 
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'Matematika',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Monday',
                 'start_time' => '07:00',
                 'end_time' => '08:30',
                 'homework' => 'Kerjakan latihan halaman 42',
                 'has_exam' => false,
                 'is_active' => true,
-                'required_items' => ['Buku Paket Matematika', 'Buku Tulis Matematika', 'Kalkulator'],
+                'required_items' => [
+                    'Buku Paket Matematika',
+                    'Buku Tulis Matematika',
+                    'Kalkulator',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'Bahasa Indonesia',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Monday',
                 'start_time' => '08:30',
                 'end_time' => '10:00',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Buku Paket Bahasa Indonesia',
+                    'Buku Tulis Bahasa Indonesia',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'Desain Grafis',
-                'location'
-                 => 'Lab RPL',
+                'location' => 'Lab RPL',
                 'day' => 'Monday',
                 'start_time' => '10:15',
                 'end_time' => '12:15',
                 'homework' => 'Buat desain poster',
                 'has_exam' => false,
                 'is_active' => true,
-                'required_items' => ['Laptop', 'Charger Laptop'],
+                'required_items' => [
+                    'Laptop',
+                    'Charger Laptop',
+                    'Mouse',
+                ],
             ],
 
             /*
@@ -78,45 +89,47 @@ class SubjectSeeder extends Seeder
             */
 
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'Bahasa Inggris',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Tuesday',
                 'start_time' => '07:00',
                 'end_time' => '08:30',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Buku Paket Bahasa Inggris',
+                    'Buku Tulis Bahasa Inggris',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'Sejarah',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Tuesday',
                 'start_time' => '08:30',
                 'end_time' => '10:00',
                 'homework' => 'Rangkuman Bab 3',
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Buku Paket Sejarah',
+                    'Buku Tulis Sejarah',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'MKK',
-                'location'
-                 => 'Lab RPL',
+                'location' => 'Lab RPL',
                 'day' => 'Tuesday',
                 'start_time' => '10:15',
                 'end_time' => '12:15',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Laptop',
+                    'Charger Laptop',
+                    'Buku Catatan',
+                ],
             ],
 
             /*
@@ -126,31 +139,33 @@ class SubjectSeeder extends Seeder
             */
 
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'PKK',
-                'location'
-                 => 'Lab RPL',
+                'location' => 'Lab RPL',
                 'day' => 'Wednesday',
                 'start_time' => '07:00',
                 'end_time' => '09:30',
                 'homework' => 'Proposal usaha',
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Laptop',
+                    'Charger Laptop',
+                    'Buku Catatan',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'PAI',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Wednesday',
                 'start_time' => '09:45',
                 'end_time' => '11:15',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Buku Paket PAI',
+                    'Buku Tulis PAI',
+                ],
             ],
 
             /*
@@ -160,31 +175,31 @@ class SubjectSeeder extends Seeder
             */
 
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'MPP',
-                'location'
-                 => 'Lab RPL',
+                'location' => 'Lab RPL',
                 'day' => 'Thursday',
                 'start_time' => '07:00',
                 'end_time' => '09:00',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Laptop',
+                    'Charger Laptop',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'BK',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Thursday',
                 'start_time' => '09:15',
                 'end_time' => '10:15',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
+                'required_items' => [
+                    'Buku Catatan',
+                ],
             ],
 
             /*
@@ -194,44 +209,59 @@ class SubjectSeeder extends Seeder
             */
 
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'PJOK',
-                'location'
-                 => 'Lapangan',
+                'location' => 'Lapangan',
                 'day' => 'Friday',
                 'start_time' => '07:00',
                 'end_time' => '09:00',
                 'homework' => null,
                 'has_exam' => false,
                 'is_active' => true,
-                'required_items' => ['Baju Olahraga', 'Sepatu Olahraga'],
+                'required_items' => [
+                    'Baju Olahraga',
+                    'Sepatu Olahraga',
+                    'Handuk',
+                ],
             ],
-
             [
-                'class_id' => $class->id,
-                'teacher_id' => $teacher->id,
                 'name' => 'PPKN',
-                'location'
-                 => 'R11',
+                'location' => 'R11',
                 'day' => 'Friday',
                 'start_time' => '09:15',
                 'end_time' => '10:45',
                 'homework' => 'Pelajari UUD 1945',
                 'has_exam' => true,
                 'is_active' => true,
+                'required_items' => [
+                    'Buku Paket PPKN',
+                    'Buku Tulis PPKN',
+                ],
             ],
-
         ];
 
-        foreach ($subjects as $subject) {
-            $requiredItems = $subject['required_items'] ?? [];
-            unset($subject['required_items']);
+        $teacherCount = $teachers->count();
+        $teacherIndex = 0;
 
-            $created = Subject::create($subject);
+        foreach ($classes as $class) {
+            foreach ($subjectTemplates as $template) {
+                $teacher = $teachers[$teacherIndex % $teacherCount];
+                $teacherIndex++;
 
-            foreach ($requiredItems as $itemName) {
-                $created->requiredItems()->create(['name' => $itemName]);
+                $requiredItems = $template['required_items'] ?? [];
+                $subjectData = $template;
+                unset($subjectData['required_items']);
+
+                $subjectData['class_id'] = $class->id;
+                $subjectData['teacher_id'] = $teacher->id;
+                $subjectData['academic_year_id'] = $activeYear->id;
+
+                $created = Subject::create($subjectData);
+
+                foreach ($requiredItems as $itemName) {
+                    $created->requiredItems()->create([
+                        'name' => $itemName,
+                    ]);
+                }
             }
         }
     }

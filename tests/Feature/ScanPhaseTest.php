@@ -13,6 +13,7 @@ use App\Services\ReturnCheckService;
 use App\Services\ScanService;
 use Database\Seeders\AdminSeeder;
 use Database\Seeders\RplDemoSeeder;
+use Database\Seeders\RplScheduleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -43,6 +44,7 @@ class ScanPhaseTest extends TestCase
 
         $this->seed(AdminSeeder::class);
         $this->seed(RplDemoSeeder::class);
+        $this->seed(RplScheduleSeeder::class);
 
         $this->student = User::where('email', 'siswa01@incase.test')->firstOrFail();
         $this->class = SchoolClass::where('name', 'X RPL 1')->firstOrFail();

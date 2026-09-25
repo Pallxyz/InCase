@@ -26,49 +26,36 @@ class SchedulePdfController extends Controller
         /** @var User $user */
         $user = User::findOrFail(Auth::id());
 
+        // Hanya admin yang boleh mencetak jadwal
         abort_unless($user->role === 'admin', 403);
 
-        // Pastikan kelas memang berasal dari sekolah admin
+        // Pastikan kelas berasal dari sekolah admin
         abort_unless(
             $schoolClass->school_name === $user->school_name,
             404
         );
 
-        $academicYear = AcademicYear::active();
-
-        // Ambil semua jadwal aktif untuk kelas yang dipilih
+        // Tahun ajaran aktif
+        $academicYear = AcademicYear::active()->first();
+        // Ambil jadwal khusus kelas yang dipilih
         $subjects = Subject::with('teacher')
             ->where('class_id', $schoolClass->id)
             ->where('is_active', true)
             ->inActiveYear()
-            ->orderBy('day')
+            ->orderByRaw("
+    FIELD(
+        day,
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday'
+    )
+")
             ->orderBy('start_time')
             ->get();
 
-        /*
-         * Susun jadwal berdasarkan hari.
-         *
-         * Contoh:
-         *
-         * $schedule['Monday'] = [
-         *     [
-         *         'no' => 1,
-         *         'start_time' => '07:00',
-         *         'end_time' => '07:45',
-         *         'subjects' => [...]
-         *     ]
-         * ];
-         */
-
-        $dayOrder = [
-            'Monday'    => 1,
-            'Tuesday'   => 2,
-            'Wednesday' => 3,
-            'Thursday'  => 4,
-            'Friday'    => 5,
-            'Saturday'  => 6,
-        ];
-
+        // Susun jadwal berdasarkan hari
         $schedule = [];
 
         foreach (self::DAY_LABELS as $day => $label) {
@@ -85,14 +72,16 @@ class SchedulePdfController extends Controller
 
                 $schedule[$day][] = [
                     'subject' => $subject,
-                    'start' => $start,
-                    'end' => $end,
+                    'start'   => $start,
+                    'end'     => $end,
                 ];
             }
         }
 
+        // Nama sekolah
         $schoolName = $user->school_name;
 
+        // Buat PDF
         $pdf = Pdf::loadView('schedules.pdf', [
             'schoolName'   => $schoolName,
             'schoolClass'  => $schoolClass,
@@ -102,6 +91,7 @@ class SchedulePdfController extends Controller
             'printedAt'    => now()->format('d/m/Y'),
         ])->setPaper('a4', 'landscape');
 
+        // Nama file PDF
         $filename = 'jadwal-' .
             str_replace(
                 [' ', '/', '\\'],
