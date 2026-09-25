@@ -33,12 +33,15 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('items', ItemController::class);
 
-    // Barang belum kembali saat cek pulang: dikumpulkan / hilang (butuh confirmed=1)
-    Route::post('/items/{item}/resolve', [ItemResolutionController::class, 'store'])
-        ->name('items.resolve');
+        // Barang belum kembali saat cek pulang: dikumpulkan / hilang (butuh confirmed=1)
+        Route::post('/items/{item}/resolve', [ItemResolutionController::class, 'store'])
+            ->name('items.resolve');
 
         Route::get('/scan-history', [ScanHistoryController::class, 'index'])
             ->name('scan-history.index');
+
+        Route::get('/scan-history/latest', [ScanHistoryController::class, 'latest'])
+            ->name('scan-history.latest');
 
         Route::get('/schedule', [ScheduleController::class, 'index'])
             ->name('schedule.index');
