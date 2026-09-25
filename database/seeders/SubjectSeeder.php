@@ -23,7 +23,7 @@ class SubjectSeeder extends Seeder
             'XII RPL 2',
         ])->get();
 
-        $activeYear = AcademicYear::active();
+        $activeYear = AcademicYear::where('is_active', true)->first();
 
         if ($teachers->isEmpty() || $classes->isEmpty() || !$activeYear) {
             return;

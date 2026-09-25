@@ -7,6 +7,8 @@ use App\Models\ScanLog;
 use App\Services\ReturnCheckService;
 use App\Services\SchoolDayResolver;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,13 +19,6 @@ class ScanHistoryController extends Controller
         private ReturnCheckService $returns,
     ) {}
 
-    /**
-     * Display the authenticated student's scan history.
-     *
-     * Setiap baris ScanLog dikelompokkan per (tanggal sekolah, fase),
-     * lalu dicocokkan dengan barang wajib dari jadwal (Subject::requiredItems)
-     * supaya kelihatan barang apa yang kurang/salah pada hari itu.
-     */
     public function index(): View
     {
         $student = Auth::user();
@@ -42,7 +37,6 @@ class ScanHistoryController extends Controller
             ->sortByDesc('timestamp')
             ->values();
 
-        // Ringkasan panel kanan, dihitung dari data hari ini yang beneran.
         $todayKey = today()->toDateString();
         $todayScans = $scans->filter(fn ($s) => $s['dateRaw'] === $todayKey);
 
@@ -63,6 +57,18 @@ class ScanHistoryController extends Controller
             'avgDuration',
             'lastScan',
         ));
+    }
+
+    public function latest(Request $request): JsonResponse
+    {
+        $latest = ScanLog::where('user_id', Auth::id())
+            ->latest('scanned_at')
+            ->first(['id', 'scanned_at']);
+
+        return response()->json([
+            'latestId' => $latest?->id,
+            'latestAt' => $latest?->scanned_at?->toIso8601String(),
+        ]);
     }
 
     private function summarizeGroup($student, $logs, string $key): array

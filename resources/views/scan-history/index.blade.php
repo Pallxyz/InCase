@@ -142,28 +142,22 @@
                 {{-- Timeline --}}
                 <div class="mt-8 flex flex-col" x-show="visibleCount() > 0">
                     @foreach ($scans as $scan)
-                        <div 
-                            x-show="matches({{ $scan['id'] }})" 
-                            :style="'order: ' + order({{ $scan['id'] }})"
-                            class="flex flex-col"
-                        >
-                            <x-scan-history-card
-                                :scan-id="$scan['id']"
-                                :time="$scan['time']"
-                                :date="$scan['date']"
-                                :scan-type="$scan['scanType']"
-                                :status="$scan['status']"
-                                :duration="$scan['duration']"
-                                :items-detected="$scan['itemsDetected']"
-                                :items-total="$scan['itemsTotal']"
-                                :detected-items="$scan['detectedItems']"
-                                :missing-items="$scan['missingItems']"
-                                :ai-summary="$scan['aiSummary']"
-                                :device="$scan['device']"
-                                :location="$scan['location']"
-                                :signal="$scan['signal']"
-                            />
-                        </div>
+                        <x-scan-history-card
+                            :scan-id="$scan['id']"
+                            :time="$scan['time']"
+                            :date="$scan['date']"
+                            :scan-type="$scan['scanType']"
+                            :status="$scan['status']"
+                            :duration="$scan['duration']"
+                            :items-detected="$scan['itemsDetected']"
+                            :items-total="$scan['itemsTotal']"
+                            :detected-items="$scan['detectedItems']"
+                            :missing-items="$scan['missingItems']"
+                            :ai-summary="$scan['aiSummary']"
+                            :device="$scan['device']"
+                            :location="$scan['location']"
+                            :signal="$scan['signal']"
+                        />
                     @endforeach
                 </div>
 
