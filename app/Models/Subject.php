@@ -47,7 +47,7 @@ class Subject extends Model
      */
     public function scopeInActiveYear(Builder $query): Builder
     {
-        $year = AcademicYear::active()->first();   // ← tambahkan ->first()
+        $year = AcademicYear::active();
 
         return $year
             ? $query->where($this->getTable() . '.academic_year_id', $year->id)

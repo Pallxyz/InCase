@@ -1,115 +1,53 @@
 <?php
 
-namespace App\Http\Controllers\Teacher;
+namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Models\AcademicYear;
+use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
-class SchedulePdfController extends Controller
+class ScheduleController extends Controller
 {
-    private const DAY_LABELS = [
-        'Monday'    => 'SENIN',
-        'Tuesday'   => 'SELASA',
-        'Wednesday' => 'RABU',
-        'Thursday'  => 'KAMIS',
-        'Friday'    => 'JUMAT',
-        'Saturday'  => 'SABTU',
-    ];
-
-    public function export(SchoolClass $schoolClass)
+    public function index(): View
     {
         /** @var User $user */
         $user = User::findOrFail(Auth::id());
 
-        abort_unless($user->role === 'admin', 403);
-
-        // Pastikan kelas memang berasal dari sekolah admin
-        abort_unless(
-            $schoolClass->school_name === $user->school_name,
-            404
-        );
-
-        $academicYear = AcademicYear::active();
-
-        // Ambil semua jadwal aktif untuk kelas yang dipilih
-        $subjects = Subject::with('teacher')
-            ->where('class_id', $schoolClass->id)
-            ->where('is_active', true)
+        $subjects = Subject::with(['teacher', 'schoolClass', 'requiredItems'])
             ->inActiveYear()
+            ->where('class_id', $user->class_id)
+            ->where('is_active', true)
             ->orderBy('day')
             ->orderBy('start_time')
             ->get();
 
-        /*
-         * Susun jadwal berdasarkan hari.
-         *
-         * Contoh:
-         *
-         * $schedule['Monday'] = [
-         *     [
-         *         'no' => 1,
-         *         'start_time' => '07:00',
-         *         'end_time' => '07:45',
-         *         'subjects' => [...]
-         *     ]
-         * ];
-         */
+        // Ruang pengganti hari ini (mis. pindah ke masjid) menggantikan ruang biasa,
+        // supaya jadwal siswa konsisten dengan yang tampil di dashboard.
+        Subject::applyRoomChanges($subjects, today());
 
-        $dayOrder = [
-            'Monday'    => 1,
-            'Tuesday'   => 2,
-            'Wednesday' => 3,
-            'Thursday'  => 4,
-            'Friday'    => 5,
-            'Saturday'  => 6,
-        ];
+        $classes = SchoolClass::where('school_name', $user->school_name)
+            ->orderBy('grade')
+            ->orderBy('major')
+            ->get();
 
-        $schedule = [];
+        // View schedules.index juga dipakai oleh guru/admin (Teacher\SubjectController),
+        // dan menampilkan dropdown $teachers di form tambah/edit jadwal. Siswa tidak
+        // boleh menambah/edit ($canAddSchedule dan $canEdit otomatis false untuk role
+        // student), tapi $teachers tetap dikirim kosong-tidak-crash karena view sudah
+        // mem-fallback ke collect() -- dikirim eksplisit di sini biar konsisten, bukan
+        // sekadar mengandalkan fallback.
+        $teachers = User::where('role', 'teacher')
+            ->where('school_name', $user->school_name)
+            ->orderBy('name')
+            ->get();
 
-        foreach (self::DAY_LABELS as $day => $label) {
-            $daySubjects = $subjects
-                ->where('day', $day)
-                ->sortBy('start_time')
-                ->values();
+        $school = School::where('name', $user->school_name)->first();
+        $schoolDayNames = $school?->dayNames() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-            $schedule[$day] = [];
-
-            foreach ($daySubjects as $subject) {
-                $start = substr((string) $subject->start_time, 0, 5);
-                $end = substr((string) $subject->end_time, 0, 5);
-
-                $schedule[$day][] = [
-                    'subject' => $subject,
-                    'start' => $start,
-                    'end' => $end,
-                ];
-            }
-        }
-
-        $schoolName = $user->school_name;
-
-        $pdf = Pdf::loadView('schedules.pdf', [
-            'schoolName'   => $schoolName,
-            'schoolClass'  => $schoolClass,
-            'academicYear' => $academicYear,
-            'schedule'     => $schedule,
-            'dayLabels'    => self::DAY_LABELS,
-            'printedAt'    => now()->format('d/m/Y'),
-        ])->setPaper('a4', 'landscape');
-
-        $filename = 'jadwal-' .
-            str_replace(
-                [' ', '/', '\\'],
-                '-',
-                strtolower($schoolClass->name)
-            ) .
-            '.pdf';
-
-        return $pdf->stream($filename);
+        return view('schedules.index', compact('subjects', 'classes', 'schoolDayNames', 'teachers'));
     }
 }

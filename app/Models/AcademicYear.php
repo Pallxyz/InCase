@@ -21,11 +21,36 @@ class AcademicYear extends Model
     ];
 
     /* ============================================
-     *  SCOPE
+     *  RELASI
      * ============================================ */
-    public function scopeActive($query)
+    public function subjects()
     {
-        return $query->where('is_active', true);
+        return $this->hasMany(Subject::class);
+    }
+
+    /* ============================================
+     *  TAHUN AJARAN AKTIF
+     * ============================================ */
+
+    /**
+     * Ambil tahun ajaran yang lagi aktif (model, atau null kalau belum ada).
+     * Pemakaian: AcademicYear::active()?->id
+     *
+     * Kalau butuh query builder-nya (mis. untuk ->exists()), pakai
+     * AcademicYear::query()->where('is_active', true).
+     */
+    public static function active(): ?self
+    {
+        return static::where('is_active', true)->first();
+    }
+
+    /**
+     * Aktifkan satu tahun ajaran, matikan yang lain.
+     */
+    public function activate(): void
+    {
+        static::where('is_active', true)->update(['is_active' => false]);
+        $this->update(['is_active' => true]);
     }
 
     /* ============================================
@@ -41,6 +66,7 @@ class AcademicYear extends Model
         if ($this->year_start && $this->year_end) {
             return $this->year_start . '/' . $this->year_end;
         }
+
         return '-';
     }
 
@@ -51,5 +77,16 @@ class AcademicYear extends Model
     public function getSemesterLabelAttribute(): string
     {
         return ucfirst($this->semester ?? '-');
+    }
+
+    /**
+     * Label lengkap, contoh: "2025/2026 - Ganjil"
+     * Diakses via: $academicYear->label
+     */
+    public function getLabelAttribute(): string
+    {
+        $semesterLabel = $this->semester === 'ganjil' ? 'Ganjil' : 'Genap';
+
+        return "{$this->year_start}/{$this->year_end} - {$semesterLabel}";
     }
 }

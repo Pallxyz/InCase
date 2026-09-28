@@ -8,7 +8,6 @@ use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Database\Seeder\RplTimetable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 

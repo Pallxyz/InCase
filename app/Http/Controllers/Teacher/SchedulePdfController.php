@@ -36,7 +36,7 @@ class SchedulePdfController extends Controller
         );
 
         // Tahun ajaran aktif
-        $academicYear = AcademicYear::active()->first();
+        $academicYear = AcademicYear::active();
         // Ambil jadwal khusus kelas yang dipilih
         $subjects = Subject::with('teacher')
             ->where('class_id', $schoolClass->id)
