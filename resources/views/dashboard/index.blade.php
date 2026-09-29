@@ -46,7 +46,14 @@
     $scannedItemIds = $todayScans->pluck('item_id')->unique();
 
     // Barang yang BELUM discan hari ini
-    $missingItems = $items->reject(fn($item) => $scannedItemIds->contains($item->id))->values();
+    // Barang Tertinggal = hanya barang MILIK siswa (sudah terdaftar) yang wajib hari ini tapi belum discan.
+    // Barang wajib yang belum pernah ditambahkan siswa tidak dianggap "tertinggal".
+    $missingItems = $items->filter(fn($item) => $item->id && !$scannedItemIds->contains($item->id))->values();
+
+    // Berapa barang wajib yang benar-benar sudah dimiliki/didaftarkan siswa (punya id di database).
+    // Kalau 0, berarti siswa belum menambahkan barang sama sekali.
+    $ownedCount = $items->filter(fn($item) => $item->id)->count();
+    $itemsUrl = \Illuminate\Support\Facades\Route::has('items.index') ? route('items.index') : url('/items');
 
     // Terbaru duluan
     $latestScansSorted = $todayScans->sortByDesc('scanned_at')->values();
@@ -80,7 +87,7 @@
         $notifications->push([
             'icon' => 'exclamation-triangle',
             'tone' => 'warning',
-            'title' => $missing->name . ' belum terdeteksi',
+            'title' => $missing->name . ($missing->id ? ' belum terdeteksi' : ' belum kamu tambahkan'),
             'time' => 'Baru saja',
         ]);
     }
@@ -162,12 +169,20 @@
                             <x-icon.check-circle class="h-5 w-5" />
                         </span>
                         <p class="mt-4 text-sm text-muted-foreground">Barang Lengkap</p>
-                        <div class="mt-1 flex flex-wrap items-center gap-2">
-                            <p class="text-2xl font-bold text-foreground">{{ $packedCount }}/{{ $totalItems }}</p>
-                            <span class="rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
-                                {{ $progress }}% siap
-                            </span>
-                        </div>
+                        @if ($totalItems > 0 && $ownedCount === 0)
+                            <p class="mt-1 text-lg font-bold text-foreground">Belum ada barang terdaftar</p>
+                            <a href="{{ $itemsUrl }}"
+                                class="mt-1 inline-block text-xs font-semibold text-primary hover:underline">
+                                Tambah barang dulu →
+                            </a>
+                        @else
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <p class="text-2xl font-bold text-foreground">{{ $packedCount }}/{{ $totalItems }}</p>
+                                <span class="rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                                    {{ $progress }}% siap
+                                </span>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="rounded-[24px] border border-border bg-card p-6 shadow-sm">
@@ -192,7 +207,9 @@
                         <p class="mt-1 text-xs text-muted-foreground">Segera hadir</p>
                     </div>
                 </div>
-
+                @if ($holiday || ($returnCheckOpen && ($packedCount > 0 || $notReturned->count() > 0 || $resolutions->count() > 0)))
+                    @include('dashboard._return-check')
+                @endif
                 {{-- ============ SECTION 2.5 — BARANG TERTINGGAL + BARANG HARI INI (KIRI) & JADWAL HARI INI (KANAN, MEMANJANG) ============ --}}
                 <div class="mt-6 grid gap-6 lg:grid-cols-3">
                     <div class="flex flex-col gap-6 lg:col-span-2">
@@ -219,15 +236,29 @@
                                         </span>
                                         <div>
                                             <p class="text-sm font-semibold text-foreground">{{ $item->name }}</p>
-                                            <p class="text-xs text-muted-foreground">Belum terdeteksi hari ini</p>
+                                            <p class="text-xs text-muted-foreground">
+                                                {{ $item->id ? 'Belum terdeteksi hari ini' : 'Belum kamu tambahkan' }}
+                                            </p>
                                         </div>
                                     </div>
                                 @empty
-                                    <div
-                                        class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm font-medium text-success">
-                                        <x-icon.check-circle class="h-4 w-4" />
-                                        Semua barang wajib sudah masuk tas kamu.
-                                    </div>
+                                    @if ($totalItems === 0)
+                                        <div
+                                            class="flex items-center gap-2 rounded-xl bg-card px-4 py-3 text-sm font-medium text-muted-foreground">
+                                            Tidak ada barang wajib hari ini.
+                                        </div>
+                                    @elseif ($ownedCount === 0)
+                                        <div class="rounded-xl bg-card px-4 py-3 text-sm text-muted-foreground">
+                                            Belum ada barang milikmu yang terdaftar.
+                                            <a href="{{ $itemsUrl }}" class="font-semibold text-primary hover:underline">Tambah barang →</a>
+                                        </div>
+                                    @else
+                                        <div
+                                            class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm font-medium text-success">
+                                            <x-icon.check-circle class="h-4 w-4" />
+                                            Semua barang milikmu yang wajib hari ini sudah masuk tas.
+                                        </div>
+                                    @endif
                                 @endforelse
                             </div>
 
@@ -248,6 +279,9 @@
                                         <x-dynamic-component :component="'icon.' . ($categoryIcons[$item->category] ?? 'cube')" class="h-4 w-4 shrink-0 text-primary" />
                                         <span
                                             class="flex-1 truncate text-sm font-medium text-foreground">{{ $item->name }}</span>
+                                        @if (!$item->id)
+                                            <span class="shrink-0 text-[11px] text-muted-foreground">Belum ditambahkan</span>
+                                        @endif
                                         @if ($packed)
                                             <x-icon.check-circle class="h-4 w-4 shrink-0 text-success" />
                                         @else
@@ -256,7 +290,7 @@
                                     </div>
                                 @empty
                                     <p class="col-span-2 py-4 text-center text-sm text-muted-foreground">
-                                        Belum ada barang terdaftar. Tambahkan dulu di halaman Barang.
+                                        Tidak ada barang wajib hari ini.
                                     </p>
                                 @endforelse
                             </div>
@@ -343,4 +377,5 @@
             </div>
         </main>
     </div>
+
 </x-layouts.dashboard>

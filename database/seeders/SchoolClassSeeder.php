@@ -9,13 +9,12 @@ class SchoolClassSeeder extends Seeder
 {
     public function run(): void
     {
+        // Kelas XII tidak dipakai (sedang PKL), jadi hanya kelas X dan XI.
         $classes = [
             ['name' => 'X RPL 1', 'major' => 'PPLG', 'grade' => 'X'],
             ['name' => 'X RPL 2', 'major' => 'PPLG', 'grade' => 'X'],
             ['name' => 'XI RPL 1', 'major' => 'PPLG', 'grade' => 'XI'],
             ['name' => 'XI RPL 2', 'major' => 'PPLG', 'grade' => 'XI'],
-            ['name' => 'XII RPL 1', 'major' => 'PPLG', 'grade' => 'XII'],
-            ['name' => 'XII RPL 2', 'major' => 'PPLG', 'grade' => 'XII'],
         ];
 
         $schoolName = 'SMKN 1 Cirebon';

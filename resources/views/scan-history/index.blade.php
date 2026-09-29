@@ -9,7 +9,7 @@
         ];
     })->values();
 
-    $lastSyncLabel = $lastScan ? $lastScan->scanned_at->diffForHumans() : 'Belum pernah';
+    $lastAtIso = $lastScan ? $lastScan->scanned_at->toIso8601String() : null;
 @endphp
 
 @push('scripts')
@@ -22,6 +22,74 @@
             dateFilter: '',
             sortBy: 'newest',
 
+            // --- status perangkat & real-time ---
+            lastAt: null,        // waktu scan terakhir (ISO)
+            latestId: null,      // id scan terakhir (baseline untuk deteksi scan baru)
+            online: false,       // dianggap aktif kalau ada scan < 5 menit terakhir
+            listening: false,    // mode "menunggu pindai"
+            listenLeft: 0,
+            listenTimer: null,
+            latestUrl: @json(route('scan-history.latest')),
+
+            start() {
+                this.refreshOnline();
+                this.poll();
+                setInterval(() => this.refreshOnline(), 15000);
+                setInterval(() => this.poll(), 3000);
+            },
+
+            async poll() {
+                try {
+                    const res = await fetch(this.latestUrl, { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    // panggilan pertama: cuma simpan baseline
+                    if (this.latestId === null) {
+                        this.latestId = data.latestId ?? 0;
+                        if (data.latestAt) this.lastAt = data.latestAt;
+                        this.refreshOnline();
+                        return;
+                    }
+
+                    // ada scan baru -> muat ulang halaman biar semua angka & daftar ikut update
+                    if ((data.latestId ?? 0) !== this.latestId) {
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    // koneksi putus sebentar, abaikan
+                }
+            },
+
+            refreshOnline() {
+                this.online = this.lastAt
+                    ? (Date.now() - new Date(this.lastAt).getTime()) < 5 * 60 * 1000
+                    : false;
+            },
+
+            lastSyncText() {
+                if (!this.lastAt) return 'Belum pernah';
+                return new Date(this.lastAt).toLocaleString('id-ID', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                });
+            },
+
+            startListening() {
+                this.listening = true;
+                this.listenLeft = 60;
+                clearInterval(this.listenTimer);
+                this.listenTimer = setInterval(() => {
+                    this.listenLeft--;
+                    if (this.listenLeft <= 0) this.stopListening();
+                }, 1000);
+            },
+
+            stopListening() {
+                this.listening = false;
+                clearInterval(this.listenTimer);
+            },
+
+            // --- filter & sort ---
             matches(id) {
                 const item = this.items.find(i => i.id === id);
                 if (!item) return true;
@@ -53,7 +121,9 @@
 @endpush
 
 <x-layouts.dashboard title="Riwayat Pindai — InCase">
-    <div x-data="scanHistoryPage()" x-init="items = @js($itemsForAlpine)" class="flex h-screen bg-background">
+    <div x-data="scanHistoryPage()"
+         x-init="items = @js($itemsForAlpine); lastAt = @js($lastAtIso); start()"
+         class="flex h-screen bg-background">
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64 lg:mr-80">
@@ -81,11 +151,28 @@
                         </button>
                         <button
                             type="button"
+                            @click="listening ? stopListening() : startListening()"
                             class="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                         >
                             <x-icon.viewfinder-circle class="h-4 w-4" />
-                            Pindai Sekarang
+                            <span x-text="listening ? 'Batal' : 'Pindai Sekarang'"></span>
                         </button>
+                    </div>
+                </div>
+
+                {{-- Mode menunggu pindai --}}
+                <div x-show="listening" x-cloak
+                     class="mt-5 flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                    <span class="relative flex h-3 w-3">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                        <span class="relative inline-flex h-3 w-3 rounded-full bg-primary"></span>
+                    </span>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-foreground">Menunggu pindai...</p>
+                        <p class="text-xs text-muted-foreground">
+                            Tempelkan tag RFID barangmu ke box. Halaman otomatis diperbarui begitu terbaca.
+                            (<span x-text="listenLeft"></span> detik lagi)
+                        </p>
                     </div>
                 </div>
 
@@ -215,18 +302,20 @@
                     <p class="text-sm font-semibold text-foreground">Status Perangkat</p>
 
                     <div class="mt-4 flex items-center gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 text-success">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg"
+                              :class="online ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'">
                             <x-icon.wifi class="h-4 w-4" />
                         </span>
                         <div>
-                            <p class="text-sm font-medium text-foreground">ESP32-01 Terhubung</p>
+                            <p class="text-sm font-medium text-foreground"
+                               x-text="online ? 'ESP32-01 Aktif' : 'ESP32-01 Tidak aktif'"></p>
                             <p class="text-xs text-muted-foreground">Box RFID Kamu</p>
                         </div>
                     </div>
 
                     <div class="mt-4 flex items-center justify-between border-t border-border pt-4 text-xs">
                         <span class="text-muted-foreground">Sinkronisasi Terakhir</span>
-                        <span class="font-medium text-foreground">{{ $lastSyncLabel }}</span>
+                        <span class="font-medium text-foreground" x-text="lastSyncText()"></span>
                     </div>
                 </div>
             </div>
