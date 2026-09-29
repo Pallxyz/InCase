@@ -47,7 +47,7 @@ class SubjectSeeder extends Seeder
     private const GURU = [
         'Eri' => 'Eri Rumsari',
         'Dudung' => 'Dudung Zulkipli',
-        'Dwi Putri' => 'Vihantika Rachma Fitri',
+        'Dwi Putri' => 'Dwi Putri Handayani',
         'Afika' => 'Afika Awwaliyah Rozzaq',
         'Zaenal' => 'Zaenal Abidin',
         'Dedi' => 'Dedi Supriyadi',

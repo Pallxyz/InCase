@@ -15,7 +15,6 @@ class TeacherSeeder extends Seeder
         $teachers = [
             'guru2@incase.test'  => 'Eri Rumsari',
             'guru3@incase.test'  => 'Dudung Zulkipli',
-            'guru4@incase.test'  => 'Vihantika Rachma Fitri',
             'guru5@incase.test'  => 'Afika Awwaliyah Rozzaq',
             'guru6@incase.test'  => 'Zaenal Abidin',
             'guru7@incase.test'  => 'Dedi Supriyadi',
@@ -26,6 +25,7 @@ class TeacherSeeder extends Seeder
             'guru12@incase.test' => 'Sri Prihantoro',
             'guru13@incase.test' => 'Syahrul Ronny',
             'guru14@incase.test' => 'Bambang Tri Setiadi',
+            'guru15@incase.test' => 'Dwi Putri Handayani',
         ];
 
         foreach ($teachers as $email => $name) {
