@@ -12,6 +12,9 @@ class Item extends Model
     /** Kategori barang yang boleh dijawab "dikumpulkan / terbawa teman" saat cek pulang. */
     public const SUBMITTABLE_CATEGORIES = ['Book'];
 
+    /** Kategori yang valid, sama persis dengan pilihan di dropdown halaman Barang. */
+    public const CATEGORIES = ['Book', 'Electronics', 'Sports'];
+
     protected $fillable = [
         'user_id',
         'name',
@@ -21,6 +24,32 @@ class Item extends Model
         'description',
         'status',
     ];
+
+    /**
+     * Tebak kategori dari nama barang wajib jadwal. Ini AMAN dipakai cuma untuk
+     * nama yang berasal dari SubjectSeeder/SubjectRequiredItem, karena kosakatanya
+     * terkontrol: "Buku Paket ...", "Buku Tulis ...", "Laptop", "Charger Laptop".
+     * Barang yang diketik bebas lewat opsi "Lainnya" di form kategorinya dipilih
+     * manual sama siswa, jadi tidak lewat fungsi ini.
+     *
+     * Kalau nanti ada nama barang wajib baru yang polanya beda (tidak diawali
+     * "Buku", "Laptop", atau "Charger"), fungsi ini bakal salah menebak jadi
+     * Sports. Cek lagi kalau muncul barang aneh di kategori Olahraga.
+     */
+    public static function categoryFor(string $name): string
+    {
+        $lower = mb_strtolower(trim($name));
+
+        if (str_starts_with($lower, 'buku')) {
+            return 'Book';
+        }
+
+        if (str_starts_with($lower, 'laptop') || str_starts_with($lower, 'charger')) {
+            return 'Electronics';
+        }
+
+        return 'Sports';
+    }
 
     /**
      * Barang seperti buku bisa saja "dikumpulkan ke guru" atau "kebawa teman",
@@ -33,28 +62,16 @@ class Item extends Model
         return in_array($this->category, self::SUBMITTABLE_CATEGORIES, true);
     }
 
-    /**
-     * Owner of the item.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Subjects requiring this item.
-     */
     public function subjects(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Subject::class,
-            'subject_items'
-        );
+        return $this->belongsToMany(Subject::class, 'subject_items');
     }
 
-    /**
-     * RFID scan history.
-     */
     public function scanLogs(): HasMany
     {
         return $this->hasMany(ScanLog::class);

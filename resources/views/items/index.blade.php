@@ -1,10 +1,15 @@
 @php
-    // Mapping icon berdasarkan opsi kategori
+    // Mapping icon & label berdasarkan kategori
     $categoryIcons = [
-        'laptop' => 'device-phone-mobile',
-        'casan' => 'tag',
-        'tulis' => 'document-text',
-        'paket' => 'book-open',
+        'Book' => 'book-open',
+        'Electronics' => 'device-phone-mobile',
+        'Sports' => 'tag',
+    ];
+
+    $categoryLabels = [
+        'Book' => 'Buku',
+        'Electronics' => 'Elektronik',
+        'Sports' => 'Olahraga',
     ];
 
     // Statistik dihitung dari collection/paginator $items
@@ -12,7 +17,7 @@
     $activeItems = $items->where('status', 'active')->count();
     $archivedItems = $items->where('status', 'archived')->count();
     $rfidRegistered = $items->whereNotNull('rfid_uid')->count();
-    
+
     // Modal mana yang harus dibuka ulang otomatis kalau validasi gagal
     $reopenModal = null;
     if ($errors->any()) {
@@ -58,7 +63,7 @@
                             Inventaris Barang
                         </h1>
                         <p class="mt-1.5 text-sm text-muted-foreground">
-                            Kelola semua daftar laptop, casan, alat tulis, dan buku paket yang terdaftar dengan RFID.
+                            Kelola semua daftar buku, laptop, dan barang wajib lainnya yang terdaftar dengan RFID.
                         </p>
                     </div>
 
@@ -116,10 +121,9 @@
                                 class="w-full appearance-none rounded-xl border border-border bg-background py-2.5 pl-3.5 pr-9 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                             >
                                 <option value="">Semua Kategori</option>
-                                <option value="laptop">Laptop</option>
-                                <option value="casan">Casan</option>
-                                <option value="tulis">Alat Tulis</option>
-                                <option value="paket">Buku Paket</option>
+                                <option value="book">Buku</option>
+                                <option value="electronics">Elektronik</option>
+                                <option value="sports">Olahraga</option>
                             </select>
                             <x-icon.funnel class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         </div>
@@ -148,7 +152,7 @@
                         </span>
                         <h3 class="mt-5 text-lg font-bold text-foreground">Belum ada barang</h3>
                         <p class="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                            Mulai daftarkan laptop, casan, alat tulis, atau buku paket supaya bisa dipantau lewat RFID.
+                            Mulai daftarkan buku, laptop, atau barang wajib lain supaya bisa dipantau lewat RFID.
                         </p>
                         <button
                             type="button"
@@ -163,12 +167,13 @@
                     {{-- DESKTOP TABLE VIEW --}}
                     <div class="mt-6 hidden rounded-[24px] border border-border bg-card shadow-sm sm:block">
                         <div class="max-h-[600px] overflow-x-auto overflow-y-auto">
-                            <table class="w-full text-left table-fixed min-w-[750px]">
+                            <table class="w-full text-left table-fixed min-w-[820px]">
                                 <thead class="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                                     <tr class="border-b border-border">
-                                        <th class="w-[42%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Barang</th>
-                                        <th class="w-[22%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">UID RFID</th>
-                                        <th class="w-[14%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Jumlah</th>
+                                        <th class="w-[32%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Barang</th>
+                                        <th class="w-[14%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Kategori</th>
+                                        <th class="w-[20%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">UID RFID</th>
+                                        <th class="w-[12%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Jumlah</th>
                                         <th class="w-[18%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Status</th>
                                         <th class="w-[4%] px-5 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right"></th>
                                     </tr>
@@ -193,6 +198,13 @@
                                                         <p class="text-xs text-muted-foreground">Diubah {{ $item->updated_at ? $item->updated_at->translatedFormat('d M Y, H:i') : '-' }}</p>
                                                     </div>
                                                 </div>
+                                            </td>
+
+                                            {{-- Kategori --}}
+                                            <td class="px-5 py-4 align-middle text-center">
+                                                <span class="inline-flex items-center rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary whitespace-nowrap">
+                                                    {{ $categoryLabels[$item->category] ?? $item->category }}
+                                                </span>
                                             </td>
 
                                             {{-- UID RFID --}}
@@ -295,7 +307,8 @@
                                         <div class="min-w-0">
                                             <p class="truncate font-semibold text-foreground leading-tight">{{ $item->name }}</p>
                                             <p class="text-xs text-muted-foreground mt-0.5">
-                                                {{ $item->updated_at ? $item->updated_at->translatedFormat('d M Y') : '-' }}
+                                                {{ $categoryLabels[$item->category] ?? $item->category }}
+                                                · {{ $item->updated_at ? $item->updated_at->translatedFormat('d M Y') : '-' }}
                                             </p>
                                         </div>
                                     </div>
@@ -405,17 +418,16 @@
                 <input type="hidden" name="_form" value="add">
 
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori (Nama Barang Otomatis Mengikuti)</label>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori</label>
                     <select
                         name="category"
                         id="add-category-select"
-                        onchange="syncCategoryToName('add')"
+                        onchange="onCategoryChange('add')"
                         class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
                     >
-                        <option value="laptop" @selected(old('_form') === 'add' && old('category') === 'laptop')>Laptop</option>
-                        <option value="casan" @selected(old('_form') === 'add' && old('category') === 'casan')>Casan</option>
-                        <option value="tulis" @selected(old('_form') === 'add' && old('category') === 'tulis')>Alat Tulis</option>
-                        <option value="paket" @selected(old('_form') === 'add' && old('category') === 'paket')>Buku Paket</option>
+                        <option value="Book" @selected(old('_form') === 'add' && old('category') === 'Book')>Buku</option>
+                        <option value="Electronics" @selected(old('_form') === 'add' && old('category') === 'Electronics')>Elektronik</option>
+                        <option value="Sports" @selected(old('_form') === 'add' && old('category') === 'Sports')>Olahraga</option>
                     </select>
                     @if (old('_form') === 'add')
                         @error('category')
@@ -424,7 +436,30 @@
                     @endif
                 </div>
 
-                <input type="hidden" name="name" id="add-name-input" value="{{ old('_form') === 'add' ? old('name') : 'Laptop' }}">
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Barang</label>
+                    <select
+                        id="add-barang"
+                        onchange="onBarangChange('add')"
+                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    ></select>
+                    <input
+                        type="text"
+                        id="add-name-free"
+                        maxlength="255"
+                        placeholder="Ketik nama barang"
+                        oninput="onBarangChange('add')"
+                        class="mt-2 hidden w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    >
+                    <p id="add-hint" class="mt-1.5 text-xs text-muted-foreground"></p>
+                    @if (old('_form') === 'add')
+                        @error('name')
+                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
+                        @enderror
+                    @endif
+                </div>
+
+                <input type="hidden" name="name" id="add-name-input" value="{{ old('_form') === 'add' ? old('name') : '' }}">
 
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-foreground">UID RFID</label>
@@ -506,6 +541,10 @@
     </div>
 
     {{-- ============ EDIT ITEM MODAL ============ --}}
+    {{-- Nama dan kategori SENGAJA readonly: barang ini sudah dibuat dengan nama
+         tertentu supaya cocok dengan barang wajib jadwal, kalau diubah bebas
+         bisa jadi tidak nyambung lagi. Yang bisa diubah cuma UID RFID, jumlah,
+         dan status. --}}
     <div id="edit-item-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
         <div onclick="closeModal('edit-item-modal')" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
 
@@ -517,10 +556,10 @@
                 </button>
             </div>
 
-            <form 
-                id="edit-item-form" 
-                method="POST" 
-                action="{{ old('_form') === 'edit' && old('item_id') ? route('items.update', old('item_id')) : '' }}" 
+            <form
+                id="edit-item-form"
+                method="POST"
+                action="{{ old('_form') === 'edit' && old('item_id') ? route('items.update', old('item_id')) : '' }}"
                 class="mt-6 flex flex-col gap-5"
             >
                 @csrf
@@ -529,26 +568,25 @@
                 <input type="hidden" name="item_id" id="edit-item-id" value="{{ old('_form') === 'edit' ? old('item_id') : '' }}">
 
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori (Nama Barang Otomatis Mengikuti)</label>
-                    <select
-                        name="category"
-                        id="edit-category"
-                        onchange="syncCategoryToName('edit')"
-                        class="block w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Nama Barang</label>
+                    <input
+                        type="text"
+                        id="edit-name-display"
+                        readonly
+                        class="block w-full cursor-not-allowed rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground"
                     >
-                        <option value="laptop">Laptop</option>
-                        <option value="casan">Casan</option>
-                        <option value="tulis">Alat Tulis</option>
-                        <option value="paket">Buku Paket</option>
-                    </select>
-                    @if (old('_form') === 'edit')
-                        @error('category')
-                            <p class="mt-1.5 text-xs font-medium text-destructive">{{ $message }}</p>
-                        @enderror
-                    @endif
+                    <p class="mt-1.5 text-xs text-muted-foreground">Nama tidak bisa diubah, supaya tetap cocok dengan barang wajib jadwal.</p>
                 </div>
 
-                <input type="hidden" name="name" id="edit-name" value="{{ old('_form') === 'edit' ? old('name') : '' }}">
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-foreground">Kategori</label>
+                    <input
+                        type="text"
+                        id="edit-category-display"
+                        readonly
+                        class="block w-full cursor-not-allowed rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground"
+                    >
+                </div>
 
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-foreground">UID RFID</label>
@@ -654,9 +692,10 @@
                 </button>
                 <button
                     type="submit"
-                    class="flex-1 rounded-full bg-destructive py-2.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                    id="delete-item-submit-btn"
+                    class="flex flex-1 items-center justify-center gap-2 rounded-full bg-destructive py-2.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                    Ya, Hapus
+                    <span id="delete-item-submit-label">Ya, Hapus</span>
                 </button>
             </form>
         </div>
@@ -664,26 +703,59 @@
 
     {{-- ============ VANILLA JS ============ --}}
     <script>
-        const categoryTextMap = {
-            'laptop': 'Laptop',
-            'casan': 'Casan',
-            'tulis': 'Alat Tulis',
-            'paket': 'Buku Paket'
-        };
+        const itemOptions = @json($itemOptions); // { Book: [...], Electronics: [...], Sports: [...] }
+        const categoryLabelMap = { Book: 'Buku', Electronics: 'Elektronik', Sports: 'Olahraga' };
+        const FREE = '__free__';
 
-        function syncCategoryToName(formType) {
-            const selectId = formType === 'add' ? 'add-category-select' : 'edit-category';
-            const nameInputId = formType === 'add' ? 'add-name-input' : 'edit-name';
-            
-            const categorySelect = document.getElementById(selectId);
-            const nameInput = document.getElementById(nameInputId);
-            
-            if (!categorySelect || !nameInput) return;
-            
-            const selectedVal = categorySelect.value;
-            nameInput.value = categoryTextMap[selectedVal] || selectedVal;
+        // ---------- Form Tambah: kategori -> dropdown nama (dari jadwal) ----------
+        function onCategoryChange(f, restoreName) {
+            const cat = document.getElementById(f + '-category-select').value;
+            const barang = document.getElementById(f + '-barang');
+            const hint = document.getElementById(f + '-hint');
+            const opts = itemOptions[cat] || [];
+
+            barang.innerHTML = '';
+            opts.forEach(function (n) {
+                const opt = document.createElement('option');
+                opt.value = n;
+                opt.textContent = n;
+                barang.appendChild(opt);
+            });
+            const freeOpt = document.createElement('option');
+            freeOpt.value = FREE;
+            freeOpt.textContent = 'Lainnya (ketik sendiri)';
+            barang.appendChild(freeOpt);
+
+            hint.textContent = opts.length
+                ? ''
+                : 'Belum ada barang wajib untuk kategori ini di jadwal kelasmu. Ketik manual di bawah.';
+
+            if (restoreName && opts.includes(restoreName)) {
+                barang.value = restoreName;
+            } else if (restoreName) {
+                barang.value = FREE;
+            }
+
+            onBarangChange(f, restoreName && !opts.includes(restoreName) ? restoreName : null);
         }
 
+        function onBarangChange(f, prefillFree) {
+            const barang = document.getElementById(f + '-barang');
+            const free = document.getElementById(f + '-name-free');
+            const isFree = barang.value === FREE;
+
+            free.classList.toggle('hidden', !isFree);
+            if (prefillFree) free.value = prefillFree;
+
+            document.getElementById(f + '-name-input').value = isFree ? free.value.trim() : barang.value;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const oldName = @json(old('_form') === 'add' ? old('name') : null);
+            onCategoryChange('add', oldName);
+        });
+
+        // ---------- Modal ----------
         function openModal(id) {
             const modal = document.getElementById(id);
             if (!modal) return;
@@ -718,26 +790,52 @@
 
         function openEditModal(button) {
             document.getElementById('edit-item-id').value = button.dataset.id || '';
-            document.getElementById('edit-category').value = button.dataset.category || 'laptop';
-            
-            syncCategoryToName('edit');
+            document.getElementById('edit-name-display').value = button.dataset.name || '';
+            document.getElementById('edit-category-display').value = categoryLabelMap[button.dataset.category] || button.dataset.category || '';
 
             document.getElementById('edit-rfid_uid').value = button.dataset.rfid || '';
             document.getElementById('edit-quantity').value = button.dataset.quantity || 1;
             document.getElementById('edit-status').value = button.dataset.status || 'active';
             document.getElementById('edit-item-form').action = '/items/' + button.dataset.id;
-            
+
             closeAllActionMenus();
             openModal('edit-item-modal');
         }
 
         function openDeleteModal(button) {
+            // Form hapus dipakai ulang untuk setiap baris, jadi selalu di-reset
+            // (tombol diaktifkan lagi, action diperbarui) tiap kali modal dibuka.
+            const submitBtn = document.getElementById('delete-item-submit-btn');
+            const submitLabel = document.getElementById('delete-item-submit-label');
+            if (submitBtn) submitBtn.disabled = false;
+            if (submitLabel) submitLabel.textContent = 'Ya, Hapus';
+
             document.getElementById('delete-item-name').textContent =
                 'Barang "' + button.dataset.name + '" akan dihapus permanen dan tidak dapat dikembalikan.';
             document.getElementById('delete-item-form').action = '/items/' + button.dataset.id;
             closeAllActionMenus();
             openModal('delete-item-modal');
         }
+
+        // Cegah form hapus terkirim dua kali (klik ganda / koneksi lambat).
+        // Ini penyebab 404 "not found" padahal barangnya sudah kehapus:
+        // request pertama sukses menghapus, request kedua mencari barang
+        // yang sudah tidak ada lagi.
+        (function () {
+            const deleteForm = document.getElementById('delete-item-form');
+            if (!deleteForm) return;
+
+            deleteForm.addEventListener('submit', function (e) {
+                const submitBtn = document.getElementById('delete-item-submit-btn');
+                const submitLabel = document.getElementById('delete-item-submit-label');
+                if (submitBtn && submitBtn.disabled) {
+                    e.preventDefault();
+                    return false;
+                }
+                if (submitBtn) submitBtn.disabled = true;
+                if (submitLabel) submitLabel.textContent = 'Menghapus...';
+            });
+        })();
 
         function toggleActionMenu(event, id) {
             event.stopPropagation();
@@ -790,10 +888,6 @@
                 noResults.classList.toggle('hidden', visibleCount !== 0);
             }
         }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            syncCategoryToName('add');
-        });
 
         var reopenModal = @json($reopenModal);
         if (reopenModal) {
