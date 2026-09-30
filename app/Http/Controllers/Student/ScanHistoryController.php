@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ScanHistoryController extends Controller
 {
@@ -23,19 +25,7 @@ class ScanHistoryController extends Controller
     {
         $student = Auth::user();
 
-        $scanLogs = ScanLog::with('item')
-            ->where('user_id', $student->id)
-            ->whereNotNull('for_date')
-            ->latest('scanned_at')
-            ->get();
-
-        $scans = $scanLogs
-            ->groupBy(fn (ScanLog $log) => $log->for_date->toDateString() . '|' . ($log->phase ?: 'idle'))
-            ->map(function ($logs, string $key) use ($student) {
-                return $this->summarizeGroup($student, $logs, $key);
-            })
-            ->sortByDesc('timestamp')
-            ->values();
+        [$scans, $lastScan] = $this->buildScanData($student);
 
         $todayKey = today()->toDateString();
         $todayScans = $scans->filter(fn ($s) => $s['dateRaw'] === $todayKey);
@@ -46,8 +36,6 @@ class ScanHistoryController extends Controller
         $avgDuration = $todayScans->isNotEmpty()
             ? round($todayScans->avg('durationSeconds'), 1)
             : 0;
-
-        $lastScan = $scanLogs->first();
 
         return view('scan-history.index', compact(
             'scans',
@@ -69,6 +57,74 @@ class ScanHistoryController extends Controller
             'latestId' => $latest?->id,
             'latestAt' => $latest?->scanned_at?->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Unduh seluruh riwayat pindai siswa sebagai CSV (bisa dibuka di Excel/Google Sheets).
+     * Pakai data yang sama persis dengan yang tampil di halaman, jadi tidak ada
+     * perhitungan ganda yang bisa beda hasil.
+     */
+    public function export(): StreamedResponse
+    {
+        $student = Auth::user();
+
+        [$scans] = $this->buildScanData($student);
+
+        $statusLabels = [
+            'success' => 'Berhasil',
+            'missing' => 'Barang Kurang',
+            'warning' => 'Peringatan',
+        ];
+
+        $filename = 'riwayat-pindai-' . Str::slug($student->name) . '-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($scans, $statusLabels) {
+            $out = fopen('php://output', 'w');
+
+            fputcsv($out, [
+                'Tanggal', 'Waktu', 'Jenis Pindai', 'Status', 'Durasi',
+                'Barang Terdeteksi', 'Barang Kurang', 'Ringkasan',
+            ]);
+
+            foreach ($scans as $scan) {
+                fputcsv($out, [
+                    $scan['date'],
+                    $scan['time'],
+                    $scan['scanType'],
+                    $statusLabels[$scan['status']] ?? $scan['status'],
+                    $scan['duration'],
+                    implode(', ', $scan['detectedItems']),
+                    implode(', ', $scan['missingItems']),
+                    $scan['aiSummary'],
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Bangun daftar $scans (dikelompokkan per hari+fase) dan scan log paling
+     * baru. Dipakai bareng oleh index() (tampilan) dan export() (CSV), supaya
+     * dua-duanya selalu menampilkan angka yang sama persis.
+     *
+     * @return array{0: \Illuminate\Support\Collection, 1: ScanLog|null}
+     */
+    private function buildScanData($student): array
+    {
+        $scanLogs = ScanLog::with('item')
+            ->where('user_id', $student->id)
+            ->whereNotNull('for_date')
+            ->latest('scanned_at')
+            ->get();
+
+        $scans = $scanLogs
+            ->groupBy(fn (ScanLog $log) => $log->for_date->toDateString() . '|' . ($log->phase ?: 'idle'))
+            ->map(fn ($logs, string $key) => $this->summarizeGroup($student, $logs, $key))
+            ->sortByDesc('timestamp')
+            ->values();
+
+        return [$scans, $scanLogs->first()];
     }
 
     private function summarizeGroup($student, $logs, string $key): array

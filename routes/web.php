@@ -44,6 +44,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/scan-history/latest', [ScanHistoryController::class, 'latest'])
             ->name('scan-history.latest');
 
+        Route::get('scan-history/export', [ScanHistoryController::class, 'export'])
+            ->name('scan-history.export');
+
         Route::get('/schedule', [ScheduleController::class, 'index'])
             ->name('schedule.index');
     });

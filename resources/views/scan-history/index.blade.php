@@ -142,13 +142,13 @@
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <button
-                            type="button"
+                        <a
+                            href="{{ route('scan-history.export') }}"
                             class="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
                         >
                             <x-icon.arrow-down-tray class="h-4 w-4" />
                             Ekspor
-                        </button>
+                        </a>
                         <button
                             type="button"
                             @click="listening ? stopListening() : startListening()"
@@ -255,6 +255,7 @@
                         title="Belum ada riwayat pindai"
                         description="Smart School Bag kamu belum pernah melakukan pemindaian RFID. Mulai pemindaian pertamamu sekarang."
                         button-label="Mulai Pindai Pertama"
+                        button-click="startListening()"
                     />
                 </div>
             </div>
