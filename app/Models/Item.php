@@ -11,8 +11,13 @@ class Item extends Model
     /** Kategori barang yang boleh dijawab "dikumpulkan / terbawa teman" saat cek pulang. */
     public const SUBMITTABLE_CATEGORIES = ['Book'];
 
-    /** Kategori yang valid, sama persis dengan pilihan di dropdown halaman Barang. */
-    public const CATEGORIES = ['Book', 'Electronics', 'Sports'];
+    /**
+     * Kategori yang valid, sama persis dengan pilihan di dropdown halaman Barang.
+     * Personal = barang pribadi yang nggak pernah muncul di jadwal (botol minum,
+     * tepak makan, topi upacara, dll) -- selalu diketik manual oleh siswa,
+     * nggak ketarik dari barang wajib jadwal seperti kategori lain.
+     */
+    public const CATEGORIES = ['Book', 'Electronics', 'Sports', 'Personal'];
 
     protected $fillable = [
         'user_id',

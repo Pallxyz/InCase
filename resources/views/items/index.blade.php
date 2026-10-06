@@ -4,12 +4,14 @@
         'Book' => 'book-open',
         'Electronics' => 'device-phone-mobile',
         'Sports' => 'tag',
+        'Personal' => 'package',
     ];
 
     $categoryLabels = [
         'Book' => 'Buku',
         'Electronics' => 'Elektronik',
         'Sports' => 'Olahraga',
+        'Personal' => 'Pribadi',
     ];
 
     // Statistik dihitung dari collection/paginator $items
@@ -124,6 +126,7 @@
                                 <option value="book">Buku</option>
                                 <option value="electronics">Elektronik</option>
                                 <option value="sports">Olahraga</option>
+                                <option value="personal">Pribadi</option>
                             </select>
                             <x-icon.funnel class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         </div>
@@ -428,6 +431,7 @@
                         <option value="Book" @selected(old('_form') === 'add' && old('category') === 'Book')>Buku</option>
                         <option value="Electronics" @selected(old('_form') === 'add' && old('category') === 'Electronics')>Elektronik</option>
                         <option value="Sports" @selected(old('_form') === 'add' && old('category') === 'Sports')>Olahraga</option>
+                        <option value="Personal" @selected(old('_form') === 'add' && old('category') === 'Personal')>Pribadi</option>
                     </select>
                     @if (old('_form') === 'add')
                         @error('category')
@@ -704,7 +708,7 @@
     {{-- ============ VANILLA JS ============ --}}
     <script>
         const itemOptions = @json($itemOptions); // { Book: [...], Electronics: [...], Sports: [...] }
-        const categoryLabelMap = { Book: 'Buku', Electronics: 'Elektronik', Sports: 'Olahraga' };
+        const categoryLabelMap = { Book: 'Buku', Electronics: 'Elektronik', Sports: 'Olahraga', Personal: 'Pribadi' };
         const FREE = '__free__';
 
         // ---------- Form Tambah: kategori -> dropdown nama (dari jadwal) ----------
@@ -726,9 +730,9 @@
             freeOpt.textContent = 'Lainnya (ketik sendiri)';
             barang.appendChild(freeOpt);
 
-            hint.textContent = opts.length
-                ? ''
-                : 'Belum ada barang wajib untuk kategori ini di jadwal kelasmu. Ketik manual di bawah.';
+            hint.textContent = cat === 'Personal'
+                ? 'Barang pribadi (botol minum, tepak makan, topi upacara, dll) diketik manual, nggak ngikut jadwal.'
+                : (opts.length ? '' : 'Belum ada barang wajib untuk kategori ini di jadwal kelasmu. Ketik manual di bawah.');
 
             if (restoreName && opts.includes(restoreName)) {
                 barang.value = restoreName;
