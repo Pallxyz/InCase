@@ -3,7 +3,7 @@
 <div class="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
     <button
         type="button"
-        @click="$store.sidebar.open = true"
+        onclick="openMobileSidebar()"
         class="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground"
         aria-label="Buka menu navigasi"
     >

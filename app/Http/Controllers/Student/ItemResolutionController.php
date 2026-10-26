@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\ItemResolution;
 use App\Models\User;
+use App\Notifications\ItemLostNotification;
 use App\Services\ReturnCheckService;
 use App\Services\SchoolDayResolver;
 use Illuminate\Http\RedirectResponse;
@@ -18,9 +19,9 @@ use Illuminate\Validation\ValidationException;
  * Barang yang dibawa pagi tapi tidak kembali saat cek pulang:
  * siswa menjelaskan "dikumpulkan" atau "hilang".
  *
- * Ada langkah konfirmasi ("kamu yakin?"): request harus membawa confirmed=1.
- * Tampilan akan mengirim confirmed=1 hanya setelah siswa menekan "Iya, yakin".
- * Kalau siswa memilih "bentar, tanya teman dulu", tidak ada request yang dikirim.
+ * Barang elektronik (laptop, charger, dll) yang dilaporkan hilang:
+ *  - wajib menyertakan keterangan (terakhir dilihat kapan/di mana)
+ *  - semua admin otomatis diberi notifikasi
  */
 class ItemResolutionController extends Controller
 {
@@ -32,15 +33,24 @@ class ItemResolutionController extends Controller
     ): RedirectResponse {
         abort_if($item->user_id !== Auth::id(), 403);
 
+        $isElectronics = $item->category === 'Electronics';
+
         $data = $request->validate([
             'status' => ['required', Rule::in([ItemResolution::SUBMITTED, ItemResolution::LOST])],
             'confirmed' => ['accepted'],
+            'note' => [
+                Rule::requiredIf(fn () => $isElectronics && $request->input('status') === ItemResolution::LOST),
+                'nullable',
+                'string',
+                'min:5',
+                'max:500',
+            ],
         ], [
             'confirmed.accepted' => 'Konfirmasi dulu: yakin dengan pilihanmu?',
+            'note.required' => 'Barang elektronik yang hilang wajib diisi keterangan (terakhir dilihat kapan/di mana).',
+            'note.min' => 'Keterangannya terlalu singkat, jelaskan sedikit lebih lengkap.',
         ]);
 
-        // "Dikumpulkan / terbawa teman" cuma masuk akal untuk barang seperti buku.
-        // Barang pribadi (botol minum, dompet, dll) yang tidak kembali cuma bisa "hilang".
         if ($data['status'] === ItemResolution::SUBMITTED && ! $item->canBeSubmitted()) {
             throw ValidationException::withMessages([
                 'status' => "{$item->name} adalah barang pribadi, tidak bisa dijelaskan \"dikumpulkan\". Pilih \"hilang\".",
@@ -61,26 +71,38 @@ class ItemResolutionController extends Controller
             ]);
         }
 
-        // whereDate() dipakai (bukan updateOrCreate dengan '==') supaya cocok
-        // walau kolom `date` tersimpan dengan jam 00:00:00 di sebagian database.
+        $note = $data['status'] === ItemResolution::LOST
+            ? (isset($data['note']) ? trim($data['note']) : null)
+            : null;
+
         $resolution = ItemResolution::where('user_id', $student->id)
             ->where('item_id', $item->id)
             ->whereDate('date', today())
             ->first();
 
+        $wasAlreadyLost = $resolution && $resolution->status === ItemResolution::LOST;
+
         if ($resolution) {
-            $resolution->update(['status' => $data['status']]);
+            $resolution->update(['status' => $data['status'], 'note' => $note]);
         } else {
             ItemResolution::create([
                 'user_id' => $student->id,
                 'item_id' => $item->id,
                 'date' => today()->toDateString(),
                 'status' => $data['status'],
+                'note' => $note,
             ]);
+        }
+
+        if ($isElectronics && $data['status'] === ItemResolution::LOST && ! $wasAlreadyLost) {
+            User::where('role', 'admin')->get()->each(
+                fn (User $admin) => $admin->notify(new ItemLostNotification($item, $student, $note))
+            );
         }
 
         $label = $data['status'] === ItemResolution::SUBMITTED ? 'dikumpulkan' : 'hilang';
 
-        return back()->with('success', "Dicatat: {$item->name} {$label}.");
+        return back()->with('success', "Dicatat: {$item->name} {$label}."
+            . ($isElectronics && $data['status'] === ItemResolution::LOST ? ' Admin sudah diberi tahu.' : ''));
     }
 }

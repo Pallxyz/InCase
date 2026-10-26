@@ -266,9 +266,96 @@ class ScanPhaseTest extends TestCase
         $this->assertSame(0, ItemResolution::count());
 
         // "hilang" tetap boleh
-        $this->actingAs($this->student)->post($url, ['status' => 'lost', 'confirmed' => 1])
-            ->assertSessionHasNoErrors()->assertSessionHas('success');
+        $this->actingAs($this->student)->post($url, [
+            'status' => 'lost',
+            'confirmed' => 1,
+            'note' => 'Terakhir dipakai pelajaran MKK jam ke-2 di Lab 2',
+        ])->assertSessionHasNoErrors()->assertSessionHas('success');
         $this->assertSame('lost', ItemResolution::first()->status);
+    }
+
+
+    public function test_barang_elektronik_hilang_wajib_pakai_keterangan(): void
+    {
+        $packed = $this->packEverything();
+        $this->at('2026-09-21 12:30');
+
+        $item = $this->item(collect($packed)->first());
+        $item->update(['category' => 'Electronics']);
+
+        $url = "/items/{$item->id}/resolve";
+
+        // tanpa keterangan -> ditolak
+        $this->actingAs($this->student)->post($url, ['status' => 'lost', 'confirmed' => 1])
+            ->assertSessionHasErrors('note');
+        $this->assertSame(0, ItemResolution::count());
+
+        // keterangan terlalu singkat -> ditolak
+        $this->actingAs($this->student)->post($url, ['status' => 'lost', 'confirmed' => 1, 'note' => 'hmm'])
+            ->assertSessionHasErrors('note');
+        $this->assertSame(0, ItemResolution::count());
+
+        // keterangan cukup -> tersimpan
+        $this->actingAs($this->student)->post($url, [
+            'status' => 'lost',
+            'confirmed' => 1,
+            'note' => 'Terakhir dipakai pelajaran MKK jam ke-2 di Lab 2',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('Terakhir dipakai pelajaran MKK jam ke-2 di Lab 2', ItemResolution::first()->note);
+    }
+
+    public function test_laporan_barang_elektronik_hilang_masuk_notifikasi_admin(): void
+    {
+        $packed = $this->packEverything();
+        $this->at('2026-09-21 12:30');
+
+        $admin = User::where('role', 'admin')->firstOrFail();
+
+        $item = $this->item(collect($packed)->first());
+        $item->update(['category' => 'Electronics']);
+
+        $url = "/items/{$item->id}/resolve";
+        $payload = [
+            'status' => 'lost',
+            'confirmed' => 1,
+            'note' => 'Terakhir dipakai pelajaran MKK jam ke-2 di Lab 2',
+        ];
+
+        $this->assertSame(0, $admin->notifications()->count());
+
+        $this->actingAs($this->student)->post($url, $payload)->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $admin->notifications()->count());
+
+        $data = $admin->notifications()->first()->data;
+        $this->assertSame('item_lost', $data['type']);
+        $this->assertSame($item->name, $data['item_name']);
+        $this->assertSame($this->student->id, $data['student_id']);
+
+        // dikirim ulang dengan status yang sama -> tidak menambah notifikasi
+        $this->actingAs($this->student)->post($url, $payload);
+        $this->assertSame(1, $admin->notifications()->count());
+    }
+
+    public function test_buku_hilang_tidak_butuh_keterangan_dan_tidak_memberi_notifikasi_admin(): void
+    {
+        $packed = $this->packEverything();
+        $this->at('2026-09-21 12:30');
+
+        $admin = User::where('role', 'admin')->firstOrFail();
+
+        $bookName = collect($packed)->first(fn($name) => $this->item($name)->category === 'Book');
+        $this->assertNotNull($bookName, 'butuh minimal satu barang Book di barang wajib hari ini untuk tes ini');
+        $item = $this->item($bookName);
+
+        $this->actingAs($this->student)
+            ->post("/items/{$item->id}/resolve", ['status' => 'lost', 'confirmed' => 1])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('lost', ItemResolution::first()->status);
+        $this->assertNull(ItemResolution::first()->note);
+        $this->assertSame(0, $admin->notifications()->count());
     }
 
     public function test_barang_yang_ternyata_ketemu_menghapus_catatan_hilang(): void

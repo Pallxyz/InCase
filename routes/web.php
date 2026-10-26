@@ -11,6 +11,7 @@ use App\Http\Controllers\Teacher\SchedulePdfController;
 use App\Http\Controllers\Teacher\SubjectController;
 use App\Http\Controllers\Teacher\RoomChangeController;
 use App\Http\Controllers\Admin\TeacherController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\HolidayController;
 
 use App\Http\Controllers\Student\ItemController;
@@ -57,6 +58,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/holidays', [HolidayController::class, 'index'])->name('holidays.index');
         Route::post('/holidays', [HolidayController::class, 'store'])->name('holidays.store');
         Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
+
+        Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
+        Route::post('/notifications/read-all', [AdminNotificationController::class, 'markAllRead'])->name('admin.notifications.read-all');
+        Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'markRead'])->name('admin.notifications.read');
 
         Route::resource('academic-years', AcademicYearController::class)
             ->only(['index', 'store', 'destroy']);

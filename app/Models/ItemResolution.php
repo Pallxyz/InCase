@@ -9,7 +9,7 @@ class ItemResolution extends Model
     public const SUBMITTED = 'submitted'; // dikumpulkan
     public const LOST = 'lost';           // hilang
 
-    protected $fillable = ['user_id', 'item_id', 'date', 'status'];
+    protected $fillable = ['user_id', 'item_id', 'date', 'status', 'note'];
 
     protected function casts(): array
     {
