@@ -28,7 +28,7 @@
 
         $navItems[] = [
             'icon' => 'clock',
-            'label' => 'Riwayat Pindai',
+            'label' => 'Pindai',
             'href' => route('scan-history.index'),
             'active' => request()->routeIs('scan-history.*'),
         ];

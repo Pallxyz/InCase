@@ -120,21 +120,21 @@
 </script>
 @endpush
 
-<x-layouts.dashboard title="Riwayat Pindai — InCase">
+<x-layouts.dashboard title="Pindai — InCase">
     <div x-data="scanHistoryPage()"
          x-init="items = @js($itemsForAlpine); lastAt = @js($lastAtIso); start()"
          class="flex h-screen bg-background">
         <x-sidebar />
 
         <main class="scrollbar-none h-screen flex-1 overflow-y-auto lg:ml-64 lg:mr-80">
-            <x-mobile-topbar title="Riwayat Pindai — InCase" />
+            <x-mobile-topbar title="Pindai — InCase" />
 
             <div class="mx-auto max-w-4xl px-6 py-8 sm:px-8">
                 {{-- Header --}}
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            Riwayat Pindai
+                            Pindai
                         </h1>
                         <p class="mt-1.5 text-sm text-muted-foreground">
                             Lihat setiap pemindaian RFID, dicocokkan dengan barang wajib di jadwal kamu.
@@ -252,7 +252,7 @@
                 <div class="mt-8" @if($scans->isNotEmpty()) x-show="visibleCount() === 0" x-cloak @endif>
                     <x-empty-state
                         icon="viewfinder-circle"
-                        title="Belum ada riwayat pindai"
+                        title="Belum ada Pindai"
                         description="Smart School Bag kamu belum pernah melakukan pemindaian RFID. Mulai pemindaian pertamamu sekarang."
                         button-label="Mulai Pindai Pertama"
                         button-click="startListening()"

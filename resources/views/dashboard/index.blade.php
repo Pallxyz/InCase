@@ -144,7 +144,7 @@
                     <div class="flex items-center gap-3">
                         <a href="{{ route('scan-history.index') }}"
                             class="relative flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
-                            aria-label="Riwayat pindai">
+                            aria-label="Pindai">
                             <x-icon.bell class="h-4.5 w-4.5" />
                             @if ($notifications->count() > 0)
                                 <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive"></span>
