@@ -129,6 +129,10 @@ class ScanPhaseTest extends TestCase
 
     public function test_jumat_malam_menyiapkan_hari_senin_dan_libur_dilewati(): void
     {
+        // Laptop dijadikan barang pribadi supaya scan selalu diterima;
+        // yang dites di sini cuma hari sekolah yang dituju, bukan daftar barang wajib.
+        $this->item('Laptop')->update(['category' => 'Personal']);
+
         $this->at('2026-09-25 19:00');   // Jumat malam
         $body = $this->scan('Laptop');
         $this->assertSame('2026-09-28', $body['for_date']);   // Senin (Sabtu-Minggu tidak ada jadwal)
@@ -195,6 +199,9 @@ class ScanPhaseTest extends TestCase
         $this->assertSame('return', $this->scan($packed[0])['phase']);
 
         $this->at('2026-09-21 18:00');
+        // Jam 18:00 yang dituju hari sekolah berikutnya; barang ini belum tentu wajib di hari itu,
+        // jadi dijadikan barang pribadi supaya scan diterima dan fasenya bisa dicek.
+        $this->item($packed[0])->update(['category' => 'Personal']);
         $this->assertSame('packing', $this->scan($packed[0])['phase']);
     }
 
@@ -423,5 +430,70 @@ class ScanPhaseTest extends TestCase
         $this->assertTrue($r->viewData('returnCheckOpen'));
         $this->assertSame($r->viewData('totalItems'), $r->viewData('packedCount'));
         $this->assertCount($r->viewData('totalItems'), $r->viewData('notReturned'));
+    }
+
+
+    public function test_barang_yang_tidak_perlu_dibawa_ditolak_dan_tidak_masuk_riwayat(): void
+    {
+        $this->at('2026-09-21 06:45');
+
+        $extra = Item::create([
+            'user_id' => $this->student->id,
+            'name' => 'Barang Tidak Ada Di Jadwal',
+            'category' => 'Book',
+            'rfid_uid' => 'TEST-NOT-NEEDED',
+            'quantity' => 1,
+            'status' => 'active',
+        ]);
+
+        $result = app(ScanService::class)->handle('TEST-NOT-NEEDED');
+
+        $this->assertSame(422, $result['code']);
+        $this->assertSame('not_needed', $result['body']['status']);
+        $this->assertSame(0, ScanLog::where('item_id', $extra->id)->count());
+    }
+
+    public function test_barang_pribadi_boleh_dipindai_walau_tidak_ada_di_jadwal(): void
+    {
+        $this->at('2026-09-21 06:45');
+
+        $bottle = Item::create([
+            'user_id' => $this->student->id,
+            'name' => 'Botol Minum',
+            'category' => 'Personal',
+            'rfid_uid' => 'TEST-BOTTLE',
+            'quantity' => 1,
+            'status' => 'active',
+        ]);
+
+        $result = app(ScanService::class)->handle('TEST-BOTTLE');
+
+        $this->assertSame(200, $result['code']);
+        $this->assertSame(1, ScanLog::where('item_id', $bottle->id)->count());
+    }
+
+    public function test_scan_pulang_ditolak_sebelum_pelajaran_terakhir_selesai(): void
+    {
+        $this->at('2026-09-21 06:45');
+
+        $this->actingAs($this->student)
+            ->postJson('/scan-history/mode', ['mode' => 'return'])
+            ->assertStatus(422);
+
+        $this->at('2026-09-21 12:30');
+
+        $this->actingAs($this->student)
+            ->postJson('/scan-history/mode', ['mode' => 'return'])
+            ->assertOk()
+            ->assertJson(['mode' => 'return']);
+    }
+
+    public function test_scan_berangkat_ditolak_setelah_pelajaran_terakhir_selesai(): void
+    {
+        $this->at('2026-09-21 12:30');
+
+        $this->actingAs($this->student)
+            ->postJson('/scan-history/mode', ['mode' => 'packing'])
+            ->assertStatus(422);
     }
 }

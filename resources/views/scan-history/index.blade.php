@@ -23,19 +23,111 @@
             sortBy: 'newest',
 
             // --- status perangkat & real-time ---
-            lastAt: null,        // waktu scan terakhir (ISO)
-            latestId: null,      // id scan terakhir (baseline untuk deteksi scan baru)
-            online: false,       // dianggap aktif kalau ada scan < 5 menit terakhir
-            listening: false,    // mode "menunggu pindai"
-            listenLeft: 0,
-            listenTimer: null,
+            lastAt: null,
+            latestId: null,
+            online: false,
             latestUrl: @json(route('scan-history.latest')),
+
+            // --- mode pindai (Scan Berangkat / Scan Pulang) ---
+            mode: null,          // null | 'packing' | 'return'
+            modeLeft: 0,
+            modeTimer: null,
+            modeError: '',
+            modeBusy: false,
+            canPack: false,
+            canReturn: false,
+            returnOpensAt: null,
+            modeUrl: @json(route('scan-history.mode')),
+            csrf: @json(csrf_token()),
 
             start() {
                 this.refreshOnline();
                 this.poll();
                 setInterval(() => this.refreshOnline(), 15000);
                 setInterval(() => this.poll(), 3000);
+            },
+
+            initMode(mode, remaining, canPack, canReturn, returnOpensAt) {
+                this.canPack = canPack;
+                this.canReturn = canReturn;
+                this.returnOpensAt = returnOpensAt;
+                if (mode && remaining > 0) this.beginCountdown(mode, remaining);
+            },
+
+            beginCountdown(mode, seconds) {
+                this.mode = mode;
+                this.modeLeft = seconds;
+                clearInterval(this.modeTimer);
+                this.modeTimer = setInterval(() => {
+                    this.modeLeft--;
+                    if (this.modeLeft <= 0) this.endMode();
+                }, 1000);
+            },
+
+            endMode() {
+                clearInterval(this.modeTimer);
+                this.mode = null;
+                this.modeLeft = 0;
+            },
+
+            modeLabel() {
+                return this.mode === 'return' ? 'Scan Pulang' : 'Scan Berangkat';
+            },
+
+            async sendMode(mode) {
+                const res = await fetch(this.modeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    body: JSON.stringify({ mode: mode }),
+                });
+                const data = await res.json().catch(() => ({}));
+                return { ok: res.ok, data: data };
+            },
+
+            async selectMode(mode) {
+                if (this.modeBusy) return;
+                this.modeError = '';
+
+                // klik tombol yang sedang aktif = batal
+                if (this.mode === mode) {
+                    await this.cancelMode();
+                    return;
+                }
+
+                this.modeBusy = true;
+                try {
+                    const result = await this.sendMode(mode);
+                    if (!result.ok) {
+                        this.modeError = result.data.message || 'Gagal memilih mode pindai.';
+                        return;
+                    }
+                    this.beginCountdown(mode, result.data.remaining);
+                } catch (e) {
+                    this.modeError = 'Gagal terhubung ke server.';
+                } finally {
+                    this.modeBusy = false;
+                }
+            },
+
+            async cancelMode() {
+                this.modeBusy = true;
+                try {
+                    await this.sendMode('none');
+                } catch (e) {
+                    // tetap batalkan di layar walau server gagal dihubungi
+                } finally {
+                    this.endMode();
+                    this.modeBusy = false;
+                }
+            },
+
+            // dipakai tombol "Mulai Pindai Pertama" di empty state
+            startListening() {
+                this.selectMode(this.canPack ? 'packing' : 'return');
             },
 
             async poll() {
@@ -74,21 +166,6 @@
                 });
             },
 
-            startListening() {
-                this.listening = true;
-                this.listenLeft = 60;
-                clearInterval(this.listenTimer);
-                this.listenTimer = setInterval(() => {
-                    this.listenLeft--;
-                    if (this.listenLeft <= 0) this.stopListening();
-                }, 1000);
-            },
-
-            stopListening() {
-                this.listening = false;
-                clearInterval(this.listenTimer);
-            },
-
             // --- filter & sort ---
             matches(id) {
                 const item = this.items.find(i => i.id === id);
@@ -122,7 +199,7 @@
 
 <x-layouts.dashboard title="Pindai — InCase">
     <div x-data="scanHistoryPage()"
-         x-init="items = @js($itemsForAlpine); lastAt = @js($lastAtIso); start()"
+         x-init="items = @js($itemsForAlpine); lastAt = @js($lastAtIso); initMode(@js($scanMode), @js($scanModeRemaining), @js($canPack), @js($canReturn), @js($returnOpensAt)); start()"
          class="flex h-screen bg-background">
         <x-sidebar />
 
@@ -137,7 +214,7 @@
                             Pindai
                         </h1>
                         <p class="mt-1.5 text-sm text-muted-foreground">
-                            Lihat setiap pemindaian RFID, dicocokkan dengan barang wajib di jadwal kamu.
+                            Pilih Scan Berangkat atau Scan Pulang, lalu tempelkan barangmu ke box.
                         </p>
                     </div>
 
@@ -149,31 +226,78 @@
                             <x-icon.arrow-down-tray class="h-4 w-4" />
                             Ekspor
                         </a>
-                        <button
-                            type="button"
-                            @click="listening ? stopListening() : startListening()"
-                            class="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                        >
-                            <x-icon.viewfinder-circle class="h-4 w-4" />
-                            <span x-text="listening ? 'Batal' : 'Pindai Sekarang'"></span>
-                        </button>
                     </div>
                 </div>
 
+                {{-- Pilihan mode pindai --}}
+                <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                    <button
+                        type="button"
+                        @click="selectMode('packing')"
+                        :disabled="!canPack && mode !== 'packing'"
+                        :class="mode === 'packing'
+                            ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                            : 'border-border bg-card text-foreground hover:bg-muted'"
+                        class="flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-card"
+                    >
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                              :class="mode === 'packing' ? '!bg-white/20 !text-primary-foreground' : ''">
+                            <x-icon.backpack class="h-5 w-5" />
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold">Scan Berangkat</span>
+                            <span class="block text-xs opacity-80"
+                                  x-text="mode === 'packing' ? 'Aktif, klik lagi untuk batal' : (canPack ? 'Siapkan barang wajib' : 'Tidak tersedia sekarang')"></span>
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="selectMode('return')"
+                        :disabled="!canReturn && mode !== 'return'"
+                        :class="mode === 'return'
+                            ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                            : 'border-border bg-card text-foreground hover:bg-muted'"
+                        class="flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-card"
+                    >
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                              :class="mode === 'return' ? '!bg-white/20 !text-primary-foreground' : ''">
+                            <x-icon.home class="h-5 w-5" />
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold">Scan Pulang</span>
+                            <span class="block text-xs opacity-80"
+                                  x-text="mode === 'return'
+                                      ? 'Aktif, klik lagi untuk batal'
+                                      : (canReturn ? 'Cek barang sebelum pulang'
+                                          : (returnOpensAt ? 'Tersedia setelah pelajaran terakhir (' + returnOpensAt + ')' : 'Tidak ada pelajaran hari ini'))"></span>
+                        </span>
+                    </button>
+                </div>
+
+                <p x-show="modeError" x-cloak x-text="modeError"
+                   class="mt-3 rounded-xl bg-destructive/10 px-4 py-2.5 text-sm font-medium text-destructive"></p>
+
                 {{-- Mode menunggu pindai --}}
-                <div x-show="listening" x-cloak
-                     class="mt-5 flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                <div x-show="mode" x-cloak
+                     class="mt-4 flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
                     <span class="relative flex h-3 w-3">
                         <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
                         <span class="relative inline-flex h-3 w-3 rounded-full bg-primary"></span>
                     </span>
                     <div class="flex-1">
-                        <p class="text-sm font-semibold text-foreground">Menunggu pindai...</p>
+                        <p class="text-sm font-semibold text-foreground">
+                            <span x-text="modeLabel()"></span> aktif, menunggu pindai...
+                        </p>
                         <p class="text-xs text-muted-foreground">
                             Tempelkan tag RFID barangmu ke box. Halaman otomatis diperbarui begitu terbaca.
-                            (<span x-text="listenLeft"></span> detik lagi)
+                            (<span x-text="modeLeft"></span> detik lagi)
                         </p>
                     </div>
+                    <button type="button" @click="cancelMode()"
+                        class="shrink-0 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted">
+                        Batal
+                    </button>
                 </div>
 
                 {{-- Filter bar --}}
@@ -252,7 +376,7 @@
                 <div class="mt-8" @if($scans->isNotEmpty()) x-show="visibleCount() === 0" x-cloak @endif>
                     <x-empty-state
                         icon="viewfinder-circle"
-                        title="Belum ada Pindai"
+                        title="Belum ada riwayat pindai"
                         description="Smart School Bag kamu belum pernah melakukan pemindaian RFID. Mulai pemindaian pertamamu sekarang."
                         button-label="Mulai Pindai Pertama"
                         button-click="startListening()"

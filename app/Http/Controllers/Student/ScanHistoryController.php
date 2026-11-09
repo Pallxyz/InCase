@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\ScanLog;
 use App\Services\ReturnCheckService;
+use App\Services\ScanModeService;
 use App\Services\SchoolDayResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ScanHistoryController extends Controller
@@ -19,11 +21,13 @@ class ScanHistoryController extends Controller
     public function __construct(
         private SchoolDayResolver $days,
         private ReturnCheckService $returns,
+        private ScanModeService $modes,
     ) {}
 
     public function index(): View
     {
         $student = Auth::user();
+        $now = now();
 
         [$scans, $lastScan] = $this->buildScanData($student);
 
@@ -37,6 +41,24 @@ class ScanHistoryController extends Controller
             ? round($todayScans->avg('durationSeconds'), 1)
             : 0;
 
+        // Ketersediaan tombol: Scan Berangkat hanya saat fase persiapan,
+        // Scan Pulang hanya setelah pelajaran terakhir hari ini selesai.
+        $canPack = $this->days->resolve($student, $now)['phase'] === 'packing';
+        $canReturn = $this->days->returnCheckOpen($student, $now);
+
+        $todaySubjects = $this->days->subjectsOn($student, today());
+        $returnOpensAt = $todaySubjects->isNotEmpty()
+            ? substr((string) $todaySubjects->max('end_time'), 0, 5)
+            : null;
+
+        // Mode yang masih tersimpan tapi sudah tidak valid dibuang.
+        $scanMode = $this->modes->current($student);
+        if (($scanMode === 'packing' && ! $canPack) || ($scanMode === 'return' && ! $canReturn)) {
+            $this->modes->clear($student);
+            $scanMode = null;
+        }
+        $scanModeRemaining = $scanMode ? $this->modes->remaining($student) : 0;
+
         return view('scan-history.index', compact(
             'scans',
             'totalScansToday',
@@ -44,6 +66,11 @@ class ScanHistoryController extends Controller
             'missingAlertsToday',
             'avgDuration',
             'lastScan',
+            'canPack',
+            'canReturn',
+            'returnOpensAt',
+            'scanMode',
+            'scanModeRemaining',
         ));
     }
 
@@ -60,9 +87,46 @@ class ScanHistoryController extends Controller
     }
 
     /**
+     * Siswa memilih mode pindai: 'packing' (Scan Berangkat), 'return' (Scan Pulang),
+     * atau 'none' (batal). Dicek di server, bukan cuma di tombol.
+     */
+    public function setMode(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'mode' => ['required', Rule::in(['packing', 'return', 'none'])],
+        ]);
+
+        $student = Auth::user();
+        $now = now();
+
+        if ($data['mode'] === 'none') {
+            $this->modes->clear($student);
+
+            return response()->json(['mode' => null, 'remaining' => 0]);
+        }
+
+        if ($data['mode'] === 'return' && ! $this->days->returnCheckOpen($student, $now)) {
+            return response()->json([
+                'message' => 'Scan pulang baru bisa dipakai setelah pelajaran terakhir hari ini selesai.',
+            ], 422);
+        }
+
+        if ($data['mode'] === 'packing' && $this->days->resolve($student, $now)['phase'] !== 'packing') {
+            return response()->json([
+                'message' => 'Scan berangkat belum tersedia: hari ini libur atau pelajaran sudah selesai.',
+            ], 422);
+        }
+
+        $this->modes->set($student, $data['mode']);
+
+        return response()->json([
+            'mode' => $data['mode'],
+            'remaining' => ScanModeService::TTL_SECONDS,
+        ]);
+    }
+
+    /**
      * Unduh seluruh riwayat pindai siswa sebagai CSV (bisa dibuka di Excel/Google Sheets).
-     * Pakai data yang sama persis dengan yang tampil di halaman, jadi tidak ada
-     * perhitungan ganda yang bisa beda hasil.
      */
     public function export(): StreamedResponse
     {
@@ -104,9 +168,8 @@ class ScanHistoryController extends Controller
     }
 
     /**
-     * Bangun daftar $scans (dikelompokkan per hari+fase) dan scan log paling
-     * baru. Dipakai bareng oleh index() (tampilan) dan export() (CSV), supaya
-     * dua-duanya selalu menampilkan angka yang sama persis.
+     * Bangun daftar $scans (dikelompokkan per hari+fase) dan scan log paling baru.
+     * Dipakai bareng oleh index() dan export(), supaya angkanya selalu sama.
      *
      * @return array{0: \Illuminate\Support\Collection, 1: ScanLog|null}
      */
@@ -142,19 +205,27 @@ class ScanHistoryController extends Controller
                     ->filter()
                     ->unique(fn ($name) => mb_strtolower($name))
                     ->values(),
-                'Absen Berangkat',
+                'Scan Berangkat',
             ],
             'return' => [
                 $this->returns->packedItems($student, $date)->pluck('name')->values(),
-                'Cek Pulang',
+                'Scan Pulang',
             ],
             default => [collect(), 'Pindai Bebas'],
         };
 
         $normalizedDetected = $detectedItems->map(fn ($name) => mb_strtolower(trim($name)));
+        $normalizedRequired = $requiredItems->map(fn ($name) => mb_strtolower(trim($name)));
+
         $missingItems = $requiredItems
             ->reject(fn ($name) => $normalizedDetected->contains(mb_strtolower($name)))
             ->values();
+
+        // Barang pribadi (botol minum, dll) ikut tampil di daftar terdeteksi, tapi tidak
+        // dihitung ke angka "x / y" supaya tidak jadi "3 / 2".
+        $detectedCount = $requiredItems->isEmpty()
+            ? $detectedItems->count()
+            : $normalizedDetected->filter(fn ($name) => $normalizedRequired->contains($name))->count();
 
         $status = match (true) {
             $requiredItems->isEmpty() => 'success',
@@ -178,7 +249,7 @@ class ScanHistoryController extends Controller
             'status' => $status,
             'duration' => rtrim(rtrim(number_format($durationSeconds, 1), '0'), '.') . ' detik',
             'durationSeconds' => $durationSeconds,
-            'itemsDetected' => $detectedItems->count(),
+            'itemsDetected' => $detectedCount,
             'itemsTotal' => $itemsTotal,
             'detectedItems' => $detectedItems->all(),
             'missingItems' => $missingItems->all(),

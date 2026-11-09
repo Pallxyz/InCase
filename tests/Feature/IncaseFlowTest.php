@@ -36,7 +36,7 @@ class IncaseFlowTest extends TestCase
         // FIELD() adalah fungsi MySQL (dipakai untuk urut hari); SQLite untuk tes belum punya.
         \Illuminate\Support\Facades\DB::connection()->getPdo()->sqliteCreateFunction(
             'FIELD',
-            fn ($value, ...$list) => ($i = array_search($value, $list)) === false ? 0 : $i + 1
+            fn($value, ...$list) => ($i = array_search($value, $list)) === false ? 0 : $i + 1
         );
 
         $this->seed(AdminSeeder::class);
@@ -55,7 +55,7 @@ class IncaseFlowTest extends TestCase
 
     private function requiredToday(): array
     {
-        return $this->todaySubjects()->flatMap(fn ($s) => $s->requiredItems->pluck('name'))->unique()->sort()->values()->all();
+        return $this->todaySubjects()->flatMap(fn($s) => $s->requiredItems->pluck('name'))->unique()->sort()->values()->all();
     }
 
     private function rfid(string $itemName): string
@@ -74,11 +74,13 @@ class IncaseFlowTest extends TestCase
     {
         $teacher = $this->teacherOf($this->todaySubjects()->first());
 
-        foreach ([
-            [$this->student, ['/dashboard', '/schedule', '/items', '/scan-history']],
-            [$teacher, ['/dashboard', '/subjects']],
-            [$this->admin, ['/academic-years', '/holidays']],
-        ] as [$user, $urls]) {
+        foreach (
+            [
+                [$this->student, ['/dashboard', '/schedule', '/items', '/scan-history']],
+                [$teacher, ['/dashboard', '/subjects']],
+                [$this->admin, ['/academic-years', '/holidays']],
+            ] as [$user, $urls]
+        ) {
             foreach ($urls as $url) {
                 $this->actingAs($user)->get($url)->assertOk();
             }
@@ -122,7 +124,8 @@ class IncaseFlowTest extends TestCase
         $notRequired = collect(\Database\Seeders\RplTimetable::allItemNames())->diff($required)->first();
 
         $res = app(ScanService::class)->handle($this->rfid($notRequired));
-        $this->assertSame(200, $res['code']);
+        $this->assertSame(422, $res['code']);
+        $this->assertSame('not_needed', $res['body']['status']);
         $r = $this->actingAs($this->student)->get('/dashboard');
         $this->assertSame(0, $r->viewData('packedCount'), 'barang tidak wajib tidak boleh menambah progress');
 
@@ -173,8 +176,12 @@ class IncaseFlowTest extends TestCase
     private function subjectPayload(array $override = []): array
     {
         return array_merge([
-            'class_id' => $this->class->id, 'name' => 'Mapel Baru', 'location' => 'R999',
-            'day' => 'Monday', 'start_time' => '13:00', 'end_time' => '14:00',
+            'class_id' => $this->class->id,
+            'name' => 'Mapel Baru',
+            'location' => 'R999',
+            'day' => 'Monday',
+            'start_time' => '13:00',
+            'end_time' => '14:00',
         ], $override);
     }
 
@@ -207,8 +214,13 @@ class IncaseFlowTest extends TestCase
         $s = $this->todaySubjects()->first();
 
         $this->actingAs($this->teacherOf($s))->put("/subjects/{$s->id}", [
-            'class_id' => $s->class_id, 'name' => $s->name, 'location' => $s->location, 'day' => $s->day,
-            'start_time' => substr($s->start_time, 0, 5), 'end_time' => substr($s->end_time, 0, 5), 'is_active' => 1,
+            'class_id' => $s->class_id,
+            'name' => $s->name,
+            'location' => $s->location,
+            'day' => $s->day,
+            'start_time' => substr($s->start_time, 0, 5),
+            'end_time' => substr($s->end_time, 0, 5),
+            'is_active' => 1,
         ])->assertSessionHasNoErrors();
     }
 
@@ -321,7 +333,7 @@ class IncaseFlowTest extends TestCase
     public function test_seeder_idempoten_dan_datanya_lengkap(): void
     {
         $this->seed(RplDemoSeeder::class);   // kedua kali
-        $this->seed(RplScheduleSeeder::class);   
+        $this->seed(RplScheduleSeeder::class);
 
         $this->assertSame(1, AcademicYear::count());
         $this->assertSame(6, SchoolClass::where('major', 'PPLG')->count());

@@ -35,6 +35,7 @@ class MqttListen extends Command
 
                 match ($body['status']) {
                     'unknown' => $this->error("❌ RFID {$rfidUid} tidak terdaftar di database."),
+                    'not_needed' => $this->warn("⚠ {$body['message']}"),
                     'missing' => $this->warn("⚠️  {$body['message']}"),
                     'complete' => $this->info("✅ {$body['message']}"),
                     default => $this->info("✅ {$body['message']}"),

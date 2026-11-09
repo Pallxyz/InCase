@@ -7,7 +7,6 @@ use App\Models\Item;
 use App\Models\ItemResolution;
 use App\Models\ScanLog;
 use App\Models\User;
-use Illuminate\Support\Str;
 
 class ScanService
 {
@@ -15,14 +14,15 @@ class ScanService
         private SchoolDayResolver $days,
         private ReturnCheckService $returns,
         private PackingChecklistService $checklist,
+        private ScanModeService $modes,
     ) {}
 
     /**
      * Proses 1 scan RFID. Return array ['code' => int, 'body' => array]
      * biar bisa dipake baik dari HTTP controller maupun listener MQTT.
      *
-     * status di body tetap 'unknown' | 'success' | 'complete' | 'missing'
-     * (alat scan tidak perlu diubah). Tambahan: 'phase' ('packing'|'return') dan 'for_date'.
+     * status di body: 'unknown' | 'not_needed' | 'success' | 'complete' | 'missing'.
+     * Tambahan: 'phase' ('packing'|'return') dan 'for_date'.
      */
     public function handle(string $rfidUid): array
     {
@@ -45,7 +45,24 @@ class ScanService
 
         $student = $item->user;
         $now = now();
-        $context = $this->days->resolve($student, $now);
+
+        // Mode yang dipilih siswa di halaman Pindai (Scan Berangkat / Scan Pulang), kalau ada.
+        $mode = $this->modes->current($student);
+        $context = $this->days->resolveForMode($student, $now, $mode);
+
+        // Barang yang tidak perlu dibawa: ditolak dan TIDAK masuk riwayat pindai.
+        if (! $this->isNeeded($item, $context)) {
+            return [
+                'code' => 422,
+                'body' => [
+                    'status' => 'not_needed',
+                    'item' => $item->name,
+                    'message' => "{$item->name} tidak termasuk barang wajib {$this->dayLabel($context['date'])}, jadi scan tidak dicatat.",
+                ],
+            ];
+        }
+
+        $this->modes->touch($student);
 
         ScanLog::create([
             'user_id' => $student->id,
@@ -61,6 +78,31 @@ class ScanService
             'packing' => $this->handlePacking($student, $item, $context),
             default => $this->handleIdle($student, $item, $now),
         };
+    }
+
+    /**
+     * Apakah barang ini boleh dipindai pada konteks (fase + tanggal) sekarang?
+     *  - kategori Pribadi (botol minum, tepak makan, topi upacara): boleh kapan saja
+     *  - tanpa jadwal (libur/akhir pekan): tidak ada pembanding, scan hanya dicatat
+     *  - selain itu: harus termasuk barang wajib pelajaran di hari itu
+     */
+    private function isNeeded(Item $item, array $context): bool
+    {
+        if ($item->category === 'Personal') {
+            return true;
+        }
+
+        if ($context['phase'] === 'idle') {
+            return true;
+        }
+
+        $required = $context['subjects']
+            ->flatMap(fn ($subject) => $subject->requiredItems->pluck('name'))
+            ->map(fn ($name) => mb_strtolower(trim($name)))
+            ->filter()
+            ->unique();
+
+        return $required->contains(mb_strtolower(trim($item->name)));
     }
 
     /** Hari libur / tanpa jadwal: scan dicatat, tidak dicocokkan dengan pelajaran. */
@@ -119,9 +161,6 @@ class ScanService
             ->where('item_id', $item->id)
             ->whereDate('date', $date)
             ->delete();
-
-        // (delete() di atas cukup: dipakai whereDate, bukan '==', supaya aman
-        // lintas database walau kolomnya bertipe date.)
 
         $pending = $this->returns->pending($student, $date);
 

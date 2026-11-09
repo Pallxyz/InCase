@@ -71,6 +71,22 @@ class SchoolDayResolver
         return $this->result('idle', $today, collect());
     }
 
+        /**
+     * Sama seperti resolve(), tapi menghormati mode yang dipilih siswa.
+     * Mode "return" hanya berlaku kalau pelajaran terakhir hari ini sudah selesai;
+     * mode lain atau mode yang sudah tidak valid mengikuti penentuan otomatis.
+     */
+    public function resolveForMode(User $student, Carbon $now, ?string $mode): array
+    {
+        if ($mode === 'return' && $this->returnCheckOpen($student, $now)) {
+            $today = $now->copy()->startOfDay();
+
+            return $this->result('return', $today, $this->subjectsOn($student, $today));
+        }
+
+        return $this->resolve($student, $now);
+    }
+
     /**
      * Pengecekan pulang hari ini sudah dibuka?
      * (hari ini ada pelajaran dan pelajaran terakhir sudah selesai)
